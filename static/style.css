@@ -7,8 +7,8 @@
 body {
     font-family: Arial, sans-serif;
     line-height: 1.6;
-    color: #333;
-    background-color: #f4f4f4;
+    color: #ffffff;
+    background-color: #000000;
 }
 
 .container {
@@ -18,8 +18,8 @@ body {
 }
 
 header {
-    background: #333;
-    color: #fff;
+    background: #000000;
+    color: #ffffff;
     padding: 15px;
     margin-bottom: 20px;
     border-radius: 5px;
@@ -45,18 +45,18 @@ nav ul li {
 }
 
 nav ul li a {
-    color: #fff;
+    color: #ffffff;
     text-decoration: none;
     padding: 5px 10px;
 }
 
 nav ul li a.active {
-    background-color: #555;
+    background-color: #7c4dff;
     border-radius: 3px;
 }
 
 main {
-    background: #fff;
+    background: #000000;
     padding: 20px;
     border-radius: 5px;
     box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
@@ -64,6 +64,11 @@ main {
 
 .question-form, .answer {
     margin-bottom: 30px;
+    background-color: #000000;
+    border: 2px solid #7c4dff;
+    border-radius: 8px;
+    padding: 25px;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
 }
 
 .form-group {
@@ -74,20 +79,23 @@ label {
     display: block;
     margin-bottom: 5px;
     font-weight: bold;
+    color: #ffffff;
 }
 
 textarea, select {
     width: 100%;
     padding: 10px;
-    border: 1px solid #ddd;
+    border: 1px solid #7c4dff;
     border-radius: 4px;
     font-size: 16px;
+    background-color: #000000;
+    color: #ffffff;
 }
 
 button {
     padding: 10px 20px;
-    background-color: #333;
-    color: #fff;
+    background-color: #7c4dff;
+    color: #ffffff;
     border: none;
     border-radius: 4px;
     cursor: pointer;
@@ -95,14 +103,15 @@ button {
 }
 
 button:hover {
-    background-color: #555;
+    background-color: #7c4dff;
+    opacity: 0.9;
 }
 
 .answer-content {
-    background-color: #f9f9f9;
+    background-color: #000000;
     padding: 15px;
     border-radius: 4px;
-    border-left: 4px solid #333;
+    border-left: 4px solid #7c4dff;
     white-space: pre-wrap;
 }
 
@@ -115,17 +124,18 @@ table {
 table th, table td {
     padding: 12px;
     text-align: left;
-    border-bottom: 1px solid #ddd;
+    border-bottom: 1px solid #7c4dff;
 }
 
 table th {
-    background-color: #f2f2f2;
+    background-color: #000000;
+    color: #7c4dff;
 }
 
 .delete-button {
     display: inline-block;
     padding: 5px 10px;
-    background-color: #ff3333;
+    background-color: #7c4dff;
     color: white;
     border-radius: 3px;
     text-decoration: none;
@@ -135,7 +145,7 @@ table th {
 .danger-button {
     display: inline-block;
     padding: 10px 15px;
-    background-color: #ff3333;
+    background-color: #7c4dff;
     color: white;
     border-radius: 4px;
     text-decoration: none;
@@ -149,26 +159,27 @@ table th {
 footer {
     text-align: center;
     margin-top: 20px;
-    color: #777;
+    color: #ffffff;
 }
 
-/* Override answer styling to ensure black background and white text */
+/* Answer styling with black background and white text */
 .answer {
     background-color: #000000 !important;
     color: #ffffff !important;
     margin-bottom: 30px;
-    padding: 20px;
-    border-left: 4px solid #7c4dff;
-    border-radius: 5px;
+    padding: 25px;
+    border: 2px solid #7c4dff;
+    border-radius: 8px;
     box-shadow: 0 3px 12px rgba(0, 0, 0, 0.2);
 }
 
 .answer-content {
     background-color: #000000 !important;
     color: #ffffff !important;
-    border-left: 4px solid #7c4dff;
     white-space: pre-wrap;
     padding: 15px;
+    border-top: 1px solid rgba(124, 77, 255, 0.3);
+    margin-top: 15px;
 }
 
 /* Make sure all text elements inside answer are white */
@@ -182,9 +193,9 @@ footer {
 .code-container {
     position: relative;
     margin: 15px 0;
-    background-color: #2d2d3a;
+    background-color: #000000;
     border-radius: 6px;
-    border: 1px solid #333;
+    border: 1px solid #7c4dff;
 }
 
 /* Code header styling */
@@ -223,7 +234,7 @@ footer {
 
 /* Success animation for copy button */
 .copy-success {
-    background-color: #4CAF50 !important;
+    background-color: #7c4dff !important;
     color: white !important;
 }
 
@@ -231,7 +242,7 @@ footer {
 .answer pre {
     padding-top: 30px !important;
     margin: 0;
-    background-color: #2d2d3a !important;
+    background-color: #000000 !important;
     overflow-x: auto;
     border-radius: 0 0 4px 4px;
 }
@@ -239,14 +250,15 @@ footer {
 .answer code {
     font-family: 'Fira Code', 'Consolas', monospace;
     font-size: 0.95rem;
-    color: #e0e0e0;
+    color: #7c4dff;
 }
 
 /* Inline code styling */
 .answer :not(pre) > code {
-    background-color: rgba(124, 77, 255, 0.1);
-    color: #b392f0 !important;
+    background-color: #000000 !important;
+    color: #7c4dff !important;
     padding: 2px 5px;
+    border: 1px solid #7c4dff;
     border-radius: 4px;
     font-size: 0.9em;
 }

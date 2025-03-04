@@ -62,7 +62,8 @@ def init_db():
                 model TEXT,
                 is_error BOOLEAN,
                 difficulty TEXT,
-                is_error_msg BOOLEAN
+                is_error_msg BOOLEAN,
+                helpful INTEGER
             )
         """)
         
@@ -92,6 +93,9 @@ def init_db():
             
         if 'is_error_msg' not in column_names:
             conn.execute("ALTER TABLE questions ADD COLUMN is_error_msg BOOLEAN")
+            
+        if 'helpful' not in column_names:
+            conn.execute("ALTER TABLE questions ADD COLUMN helpful INTEGER")
             
         conn.commit()
 
@@ -143,9 +147,13 @@ async def handle_question(
     
     with sqlite3.connect(DB) as conn:
         conn.execute(
-            "INSERT INTO questions (question, timestamp, theme, subtheme, provider, model, is_error, difficulty, is_error_msg) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
-            (question, timestamp, theme, sub_theme, provider, model, is_error_msg, difficulty, is_error_msg)
+            "INSERT INTO questions (question, timestamp, theme, subtheme, provider, model, is_error, difficulty, is_error_msg, helpful) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+            (question, timestamp, theme, sub_theme, provider, model, is_error_msg, difficulty, is_error_msg, None)
         )
+        # Get the last insert id
+        cursor = conn.cursor()
+        cursor.execute("SELECT last_insert_rowid()")
+        question_id = cursor.fetchone()[0]
     
     # Get available models for each provider (for the response template)
     available_models = {}
@@ -155,14 +163,27 @@ async def handle_question(
     
     return templates.TemplateResponse(
         "index.html",
-        {"request": request, "answer": answer, "providers": providers.keys(), "models": available_models}
+        {
+            "request": request, 
+            "answer": answer, 
+            "providers": providers.keys(), 
+            "models": available_models,
+            "question_id": question_id
+        }
     )
+
+# Add new endpoint for helpfulness feedback
+@app.get("/feedback/{question_id}/{helpful}")
+async def submit_feedback(question_id: int, helpful: int):
+    with sqlite3.connect(DB) as conn:
+        conn.execute("UPDATE questions SET helpful = ? WHERE id = ?", (helpful, question_id))
+    return {"success": True}
 
 @app.get("/database", response_class=HTMLResponse)
 async def database(request: Request):
     with sqlite3.connect(DB) as conn:
         cursor = conn.cursor()
-        cursor.execute("SELECT id, question, timestamp, theme, subtheme, provider, model, is_error, difficulty, is_error_msg FROM questions ORDER BY timestamp DESC")
+        cursor.execute("SELECT id, question, timestamp, theme, subtheme, provider, model, is_error, difficulty, is_error_msg, helpful FROM questions ORDER BY timestamp DESC")
         questions = cursor.fetchall()
     return templates.TemplateResponse(
         "database.html",
@@ -185,7 +206,7 @@ async def clear_database():
 async def visualization(request: Request):
     # Get data from the database
     with sqlite3.connect(DB) as conn:
-        df = pd.read_sql_query("SELECT theme, subtheme, is_error, is_error_msg, difficulty FROM questions WHERE theme IS NOT NULL", conn)
+        df = pd.read_sql_query("SELECT theme, subtheme, is_error, is_error_msg, difficulty, helpful FROM questions WHERE theme IS NOT NULL", conn)
     
     # Count themes and create histogram
     if not df.empty:
@@ -271,6 +292,23 @@ async def visualization(request: Request):
                 plot_html = pio.to_html(fig1, full_html=False) + "<br><br>" + pio.to_html(fig2, full_html=False)
         else:
             plot_html = pio.to_html(fig1, full_html=False)
+        
+        # Add helpfulness visualization if data exists
+        if 'helpful' in df.columns and df['helpful'].notna().any():
+            helpful_counts = df['helpful'].value_counts().reset_index()
+            helpful_counts.columns = ['helpful', 'count']
+            helpful_counts['helpful'] = helpful_counts['helpful'].map({1: 'Helpful', 0: 'Not Helpful'})
+            
+            fig_helpful = px.pie(helpful_counts, values='count', names='helpful',
+                               title='User Feedback: Helpful vs Not Helpful Responses',
+                               color='helpful',
+                               color_discrete_map={
+                                   'Helpful': 'green',
+                                   'Not Helpful': 'red'
+                               })
+            
+            # Add to plots
+            plot_html += "<br><br>" + pio.to_html(fig_helpful, full_html=False)
     else:
         plot_html = "<div class='alert alert-info'>No data available for visualization</div>"
     

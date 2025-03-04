@@ -18,8 +18,8 @@
   right: 0;
   padding: 2px 8px;
   font-size: 12px;
-  background: rgba(0, 0, 0, 0.6);
-  color: white;
+  background: #000000;
+  color: #7c4dff;
   border-bottom-left-radius: 4px;
 }
 
@@ -27,21 +27,25 @@ pre {
   margin: 0 !important;
   padding: 16px !important;
   overflow-x: auto;
-  background-color: #f6f8fa;
+  background-color: #000000;
   font-family: "SFMono-Regular", Consolas, "Liberation Mono", Menlo, monospace;
   font-size: 14px;
   line-height: 1.45;
+  color: #ffffff;
 }
 
 code {
   font-family: "SFMono-Regular", Consolas, "Liberation Mono", Menlo, monospace;
+  color: #7c4dff;
 }
 
 :not(pre) > code {
-  background-color: rgba(175, 184, 193, 0.2);
+  background-color: #000000;
   padding: 0.2em 0.4em;
   border-radius: 3px;
   font-size: 85%;
+  color: #7c4dff;
+  border: 1px solid #7c4dff;
 }
 
 /* Math equation styling */

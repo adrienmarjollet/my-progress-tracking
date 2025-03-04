@@ -20,15 +20,17 @@
             --success-color: #4CAF50;
             --border-color: #333333;
             --input-bg: #2d2d2d;
-            --answer-bg: #000000;
-            --code-bg: #2d2d3a;
+            --answer-bg: #252525;
+            --code-bg: #1a1a1a;
+            --button-text: #ffffff;
+            --nav-active-text: #ffffff;
         }
         
         body {
             font-family: 'Inter', sans-serif;
             background-color: var(--bg-primary);
             color: var(--text-primary);
-            max-width: 900px;
+            max-width: 1200px;
             margin: 0 auto;
             padding: 20px;
             line-height: 1.6;
@@ -61,9 +63,11 @@
         
         .navbar {
             background-color: var(--bg-secondary) !important;
+            background: var(--bg-secondary) !important;
             border-radius: 8px;
             padding: 10px 20px;
             margin-bottom: 30px;
+            border: 1px solid var(--border-color);
         }
         
         .navbar-brand {
@@ -86,7 +90,7 @@
         
         .nav-link.active {
             background-color: var(--accent-color);
-            color: white !important;
+            color: var(--nav-active-text) !important;
         }
         
         .navbar-nav {
@@ -105,6 +109,20 @@
             border-radius: 12px;
             box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
             margin-bottom: 30px;
+            border: 1px solid var(--border-color);
+            position: relative;
+        }
+        
+        .question-form::before {
+            content: "Prompt";
+            position: absolute;
+            top: -12px;
+            left: 20px;
+            background-color: var(--bg-primary);
+            color: var(--accent-color);
+            padding: 0 10px;
+            font-weight: 600;
+            font-size: 1.1rem;
         }
         
         .form-group {
@@ -145,7 +163,7 @@
             -webkit-appearance: none;
             -moz-appearance: none;
             appearance: none;
-            background-image: url("data:image/svg+xml;utf8,<svg fill='gray' height='24' viewBox='0 0 24 24' width='24' xmlns='http://www.w3.org/2000/svg'><path d='M7 10l5 5 5-5z'/></svg>");
+            background-image: url("data:image/svg+xml;utf8,<svg fill='%237c4dff' height='24' viewBox='0 0 24 24' width='24' xmlns='http://www.w3.org/2000/svg'><path d='M7 10l5 5 5-5z'/></svg>");
             background-repeat: no-repeat;
             background-position-x: calc(100% - 10px);
             background-position-y: center;
@@ -155,7 +173,7 @@
         button {
             padding: 12px 24px;
             background-color: var(--accent-color);
-            color: white;
+            color: var(--button-text);
             border: none;
             border-radius: 6px;
             cursor: pointer;
@@ -178,8 +196,8 @@
         .answer {
             margin-top: 30px;
             padding: 25px;
-            background-color: #000000 !important;
-            border-left: 5px solid var(--accent-color);
+            background-color: var(--answer-bg) !important;
+            border: 1px solid var(--border-color);
             border-radius: 8px;
             box-shadow: 0 6px 24px rgba(0, 0, 0, 0.3);
             position: relative;
@@ -189,7 +207,7 @@
             color: var(--accent-color);
             margin-top: 0;
             font-size: 1.5rem;
-            border-bottom: 1px solid rgba(124, 77, 255, 0.3);
+            border-bottom: 1px solid var(--border-color);
             padding-bottom: 10px;
             margin-bottom: 20px;
         }
@@ -198,14 +216,17 @@
             white-space: pre-wrap;
             line-height: 1.6;
             font-size: 1.05rem;
-            color: #ffffff !important;
+            color: var(--text-primary) !important;
+            padding: 15px;
+            border-top: 1px solid rgba(124, 77, 255, 0.2);
+            margin-top: 10px;
         }
         
-        /* Force all text in answer to be white */
+        /* Force all text in answer to be light colored */
         .answer p, .answer span, .answer div:not(.code-header):not(.copy-button), 
         .answer li, .answer a, .answer td, .answer th, .answer h1, .answer h2, 
         .answer h3, .answer h4, .answer h5, .answer h6 {
-            color: #ffffff !important;
+            color: var(--text-primary) !important;
         }
         
         /* Code block styling */
@@ -226,10 +247,11 @@
         /* Inline code styling */
         .answer :not(pre) > code {
             background-color: rgba(124, 77, 255, 0.1);
-            color: #b392f0 !important;
+            color: #7c4dff !important;
             padding: 2px 5px;
             border-radius: 4px;
             font-size: 0.9em;
+            border: 1px solid var(--accent-color);
         }
         
         /* Language tag label */
@@ -259,11 +281,12 @@
             border-radius: 6px;
             transition: all 0.2s ease;
             font-weight: 500;
+            border: 1px solid var(--border-color);
         }
         
         .nav a:hover {
             background-color: var(--accent-color);
-            color: white;
+            color: var(--text-primary);
             transform: translateY(-2px);
         }
         
@@ -312,19 +335,109 @@
         
         .copy-button:hover {
             background-color: var(--accent-color);
-            color: white;
+            color: var(--text-primary);
         }
         
         /* Success animation for copy button */
         .copy-success {
             background-color: var(--success-color) !important;
-            color: white !important;
+            color: var(--text-primary) !important;
         }
         
         /* Ensure code blocks have proper padding for the button */
         .answer pre {
             padding-top: 30px !important;
             margin: 0;
+            background-color: var(--code-bg) !important;
+        }
+        
+        /* Container styling for overall page structure */
+        .page-container {
+            display: flex;
+            flex-direction: column;
+            gap: 30px;
+        }
+
+        /* Feedback buttons styling */
+        .feedback-container {
+            margin-top: 15px;
+            padding-top: 15px;
+            border-top: 1px solid var(--border-color);
+            text-align: center;
+        }
+
+        .feedback-text {
+            font-size: 0.9rem;
+            color: var(--text-secondary);
+            margin-bottom: 10px;
+        }
+
+        .feedback-buttons {
+            display: flex;
+            justify-content: center;
+            gap: 15px;
+        }
+
+        .feedback-btn {
+            padding: 8px 16px;
+            border-radius: 30px;
+            font-size: 0.9rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+            transition: all 0.2s ease;
+            cursor: pointer;
+            border: 1px solid var(--border-color);
+        }
+
+        .feedback-btn-helpful {
+            background-color: rgba(76, 175, 80, 0.1);
+            color: var(--text-primary);
+        }
+
+        .feedback-btn-not-helpful {
+            background-color: rgba(244, 67, 54, 0.1);
+            color: var(--text-primary);
+        }
+
+        .feedback-btn-helpful:hover {
+            background-color: rgba(76, 175, 80, 0.3);
+        }
+
+        .feedback-btn-not-helpful:hover {
+            background-color: rgba(244, 67, 54, 0.3);
+        }
+
+        .feedback-btn.selected {
+            transform: scale(1.05);
+            font-weight: 600;
+        }
+
+        .feedback-btn-helpful.selected {
+            background-color: rgba(76, 175, 80, 0.4);
+            border-color: #4CAF50;
+        }
+
+        .feedback-btn-not-helpful.selected {
+            background-color: rgba(244, 67, 54, 0.4);
+            border-color: #f44336;
+        }
+
+        .feedback-icon {
+            font-size: 16px;
+        }
+
+        .feedback-success {
+            margin-top: 10px;
+            font-size: 0.85rem;
+            color: var(--success-color);
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+
+        .feedback-success.visible {
+            opacity: 1;
         }
     </style>
     <script>
@@ -365,7 +478,6 @@
 <body>
     <div class="container">
         <header>
-            <h1>LLM Progress Tracking</h1>
             <nav class="navbar">
                 <div class="container-fluid">
                     <span class="navbar-brand">LLM Progress Tracking</span>
@@ -386,7 +498,7 @@
             </nav>
         </header>
         
-        <main>
+        <main class="page-container">
             <div class="question-form">
                 <form method="POST">
                     <div class="form-group">
@@ -416,6 +528,20 @@
                 <h2>✨ Response</h2>
                 <div class="answer-content">
                     {{ answer|safe }}
+                </div>
+                
+                <!-- Add feedback section -->
+                <div class="feedback-container">
+                    <div class="feedback-text">Was this response helpful?</div>
+                    <div class="feedback-buttons">
+                        <button class="feedback-btn feedback-btn-helpful" onclick="submitFeedback({{ question_id }}, 1)">
+                            <span class="feedback-icon">👍</span> Helpful
+                        </button>
+                        <button class="feedback-btn feedback-btn-not-helpful" onclick="submitFeedback({{ question_id }}, 0)">
+                            <span class="feedback-icon">👎</span> Not helpful
+                        </button>
+                    </div>
+                    <div id="feedback-success" class="feedback-success">Thank you for your feedback!</div>
                 </div>
             </div>
             {% endif %}
@@ -449,8 +575,6 @@
             function processCodeBlocks() {
                 const answerContent = document.querySelector('.answer-content');
                 
-                // Find all code blocks - this assumes your backend is wrapping code blocks in <pre><code> tags
-                // If not, you'll need to modify your backend to properly format code blocks
                 const codeBlocks = answerContent.querySelectorAll('pre code');
                 
                 codeBlocks.forEach(codeBlock => {
@@ -507,6 +631,43 @@
                 if (window.Prism) {
                     Prism.highlightAll();
                 }
+            }
+
+            // Function to submit feedback
+            function submitFeedback(questionId, isHelpful) {
+                // Visual feedback
+                const helpfulBtn = document.querySelector('.feedback-btn-helpful');
+                const notHelpfulBtn = document.querySelector('.feedback-btn-not-helpful');
+                const successMsg = document.getElementById('feedback-success');
+                
+                // Reset both buttons
+                helpfulBtn.classList.remove('selected');
+                notHelpfulBtn.classList.remove('selected');
+                
+                // Highlight the selected button
+                if (isHelpful === 1) {
+                    helpfulBtn.classList.add('selected');
+                } else {
+                    notHelpfulBtn.classList.add('selected');
+                }
+                
+                // Send request to the server
+                fetch(`/feedback/${questionId}/${isHelpful}`)
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.success) {
+                            // Show success message
+                            successMsg.classList.add('visible');
+                            
+                            // Hide after 3 seconds
+                            setTimeout(() => {
+                                successMsg.classList.remove('visible');
+                            }, 3000);
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Error submitting feedback:', error);
+                    });
             }
         </script>
     </div>

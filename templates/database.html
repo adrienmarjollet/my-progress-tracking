@@ -449,6 +449,7 @@
                                 <th class="sortable">Theme</th>
                                 <th class="sortable">Provider/Model</th>
                                 <th class="sortable">Status</th>
+                                <th class="sortable">Feedback</th>
                                 <th>Actions</th>
                             </tr>
                         </thead>
@@ -480,6 +481,15 @@
                                         <i class="fas fa-exclamation-triangle" style="color: #e57373;" title="Error"></i>
                                     {% endif %}
                                 </td>
+                                <td>
+                                    {% if question[10] is defined and question[10] == 1 %}
+                                        <span class="badge bg-success"><i class="fas fa-thumbs-up"></i> Helpful</span>
+                                    {% elif question[10] is defined and question[10] == 0 %}
+                                        <span class="badge bg-danger"><i class="fas fa-thumbs-down"></i> Not Helpful</span>
+                                    {% else %}
+                                        <span class="badge bg-secondary">No Feedback</span>
+                                    {% endif %}
+                                </td>
                                 <td class="actions">
                                     <div class="action-buttons">
                                         <a href="#" class="action-btn expand-btn" onclick="toggleDetails('{{ question[0] }}'); return false;"> 
@@ -492,7 +502,7 @@
                                 </td>
                             </tr>
                             <tr id="details-{{ question[0] }}" class="details-row">
-                                <td colspan="7">
+                                <td colspan="8">
                                     <div class="details-content">
                                         <p><strong>Full Question:</strong> {{ question[1] }}</p>
                                         <p><strong>Timestamp:</strong> {{ question[2] }}</p>
@@ -502,6 +512,15 @@
                                         <p><strong>Model:</strong> {{ question[6] if question[6] else "Default" }}</p>
                                         <p><strong>Is Error:</strong> {{ "Yes" if question[7] else "No" }}</p>
                                         <p><strong>Difficulty:</strong> {{ question[8] if question[8] else "Unknown" }}</p>
+                                        <p><strong>Feedback:</strong> 
+                                            {% if question[10] is defined and question[10] == 1 %}
+                                                Helpful
+                                            {% elif question[10] is defined and question[10] == 0 %}
+                                                Not Helpful
+                                            {% else %}
+                                                No feedback provided
+                                            {% endif %}
+                                        </p>
                                     </div>
                                 </td>
                             </tr>
