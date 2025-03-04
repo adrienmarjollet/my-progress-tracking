@@ -1,0 +1,675 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Question History - LLM Progress Tracking</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <style>
+        :root {
+            --bg-primary: #121212;
+            --bg-secondary: #1e1e1e;
+            --bg-card: #252525;
+            --text-primary: #e0e0e0;
+            --text-secondary: #a0a0a0;
+            --accent-color: #7c4dff;
+            --accent-hover: #9370DB;
+            --success-color: #4CAF50;
+            --danger-color: #f44336;
+            --warning-color: #ff9800;
+            --border-color: #333333;
+            --input-bg: #2d2d2d;
+            --table-stripe: #1a1a1a;
+        }
+        
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: var(--bg-primary);
+            color: var(--text-primary);
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            line-height: 1.6;
+        }
+        
+        .container {
+            width: 100%;
+            padding: 20px;
+            box-sizing: border-box;
+        }
+        
+        header {
+            margin-bottom: 30px;
+        }
+        
+        h1, h2 {
+            color: var(--text-primary);
+            font-weight: 600;
+        }
+        
+        h1 {
+            font-size: 2.2rem;
+            border-bottom: 1px solid var(--border-color);
+            padding-bottom: 10px;
+        }
+        
+        .navbar {
+            background-color: var(--bg-secondary) !important;
+            border-radius: 8px;
+            padding: 10px 20px;
+            margin-bottom: 30px;
+            display: flex;
+            align-items: center;
+        }
+        
+        .navbar-brand {
+            color: var(--accent-color);
+            font-weight: 700;
+            font-size: 1.3rem;
+            text-decoration: none;
+        }
+        
+        .navbar-nav {
+            display: flex;
+            list-style: none;
+            padding-left: 0;
+            margin-left: 20px;
+            margin-bottom: 0;
+        }
+        
+        .nav-item {
+            display: inline-block;
+        }
+        
+        .nav-link {
+            color: var(--text-primary);
+            margin: 0 10px;
+            padding: 8px 16px;
+            border-radius: 6px;
+            transition: all 0.2s ease;
+            text-decoration: none;
+            display: block;
+        }
+        
+        .nav-link:hover {
+            background-color: rgba(124, 77, 255, 0.1);
+        }
+        
+        .nav-link.active {
+            background-color: var(--accent-color);
+            color: white;
+        }
+        
+        .database-controls {
+            margin-bottom: 20px;
+        }
+        
+        .danger-button {
+            display: inline-block;
+            padding: 10px 20px;
+            background-color: var(--danger-color);
+            color: white;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            text-decoration: none;
+            font-weight: 500;
+            transition: all 0.2s ease;
+        }
+        
+        .danger-button:hover {
+            opacity: 0.9;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+        }
+        
+        .questions-list {
+            background-color: var(--bg-secondary);
+            border-radius: 12px;
+            padding: 25px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
+        }
+        
+        .filter-controls {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+        
+        .filter-group {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .filter-group label {
+            color: var(--text-secondary);
+            font-weight: 500;
+        }
+        
+        .filter-group select {
+            background-color: var(--input-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            padding: 7px 12px;
+            color: var(--text-primary);
+            min-width: 150px;
+            -webkit-appearance: none;
+            -moz-appearance: none;
+            appearance: none;
+            background-image: url("data:image/svg+xml;utf8,<svg fill='gray' height='24' viewBox='0 0 24 24' width='24' xmlns='http://www.w3.org/2000/svg'><path d='M7 10l5 5 5-5z'/></svg>");
+            background-repeat: no-repeat;
+            background-position-x: calc(100% - 10px);
+            background-position-y: center;
+            padding-right: 30px;
+        }
+        
+        .filter-group select:focus {
+            border-color: var(--accent-color);
+            outline: none;
+            box-shadow: 0 0 0 2px rgba(124, 77, 255, 0.2);
+        }
+        
+        .table {
+            width: 100%;
+            border-collapse: separate;
+            border-spacing: 0;
+            color: var(--text-primary);
+            margin-bottom: 1rem;
+        }
+        
+        .table th, .table td {
+            padding: 10px 12px;
+            text-align: left;
+            border-bottom: 1px solid var(--border-color);
+            font-size: 0.85rem;
+        }
+        
+        .table th {
+            background-color: var(--bg-card);
+            font-weight: 600;
+            color: var(--text-secondary);
+            position: sticky;
+            top: 0;
+            z-index: 10;
+        }
+        
+        .table-striped tbody tr:nth-of-type(odd) {
+            background-color: var(--table-stripe);
+        }
+        
+        .table tbody tr:hover {
+            background-color: rgba(124, 77, 255, 0.05);
+        }
+        
+        .theme-tag {
+            display: inline-block;
+            padding: 3px 8px;
+            border-radius: 12px;
+            font-size: 0.75rem;
+            font-weight: 500;
+        }
+        
+        .theme-programming { 
+            background-color: rgba(33, 150, 243, 0.15); 
+            color: #64b5f6;
+        }
+        .theme-history { 
+            background-color: rgba(255, 193, 7, 0.15); 
+            color: #ffd54f;
+        }
+        .theme-culture { 
+            background-color: rgba(76, 175, 80, 0.15); 
+            color: #81c784;
+        }
+        .theme-physics { 
+            background-color: rgba(156, 39, 176, 0.15); 
+            color: #ba68c8;
+        }
+        .theme-other { 
+            background-color: rgba(158, 158, 158, 0.15); 
+            color: #9e9e9e;
+        }
+        
+        .question-text {
+            max-width: 200px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            cursor: help;
+        }
+        
+        .timestamp {
+            font-size: 0.8rem;
+            white-space: nowrap;
+            color: var(--text-secondary);
+        }
+        
+        .badge {
+            display: inline-block;
+            padding: 3px 8px;
+            border-radius: 4px;
+            font-size: 0.75rem;
+            font-weight: 500;
+        }
+        
+        .bg-success { 
+            background-color: rgba(76, 175, 80, 0.2); 
+            color: #81c784;
+        }
+        .bg-warning { 
+            background-color: rgba(255, 193, 7, 0.2); 
+            color: #ffd54f;
+        }
+        .bg-danger { 
+            background-color: rgba(244, 67, 54, 0.2); 
+            color: #e57373;
+        }
+        .bg-secondary { 
+            background-color: rgba(158, 158, 158, 0.2); 
+            color: #9e9e9e;
+        }
+        
+        .action-buttons {
+            display: flex;
+            gap: 5px;
+        }
+        
+        .action-btn {
+            padding: 3px 8px;
+            font-size: 0.75rem;
+            border-radius: 4px;
+            text-decoration: none;
+            color: var(--text-primary);
+            background-color: var(--bg-card);
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s ease;
+            border: none;
+            cursor: pointer;
+        }
+        
+        .delete-btn {
+            background-color: rgba(244, 67, 54, 0.2);
+            color: #e57373;
+        }
+        
+        .delete-btn:hover {
+            background-color: rgba(244, 67, 54, 0.3);
+        }
+        
+        .expand-btn {
+            background-color: rgba(33, 150, 243, 0.2);
+            color: #64b5f6;
+        }
+        
+        .expand-btn:hover {
+            background-color: rgba(33, 150, 243, 0.3);
+        }
+        
+        .details-row {
+            display: none;
+            background-color: var(--bg-card);
+        }
+        
+        .details-content {
+            padding: 15px 20px;
+            white-space: pre-wrap;
+            font-size: 0.9rem;
+            color: var(--text-secondary);
+        }
+        
+        .details-content strong {
+            color: var(--text-primary);
+        }
+        
+        .sortable {
+            cursor: pointer;
+            position: relative;
+            user-select: none;
+        }
+        
+        .sortable:after {
+            content: '↕';
+            position: absolute;
+            right: 8px;
+            color: var(--text-secondary);
+            opacity: 0.5;
+        }
+        
+        .sortable.asc:after {
+            content: '↑';
+            color: var(--accent-color);
+            opacity: 1;
+        }
+        
+        .sortable.desc:after {
+            content: '↓';
+            color: var(--accent-color);
+            opacity: 1;
+        }
+        
+        @media (max-width: 992px) {
+            .filter-controls {
+                flex-direction: column;
+                align-items: flex-start;
+            }
+            
+            .filter-group {
+                width: 100%;
+            }
+            
+            .filter-group select {
+                width: 100%;
+            }
+        }
+        
+        @media (max-width: 768px) {
+            body {
+                padding: 10px;
+            }
+            
+            .questions-list {
+                padding: 15px;
+                overflow-x: auto;
+            }
+            
+            .table {
+                min-width: 800px;
+            }
+            
+            .question-text {
+                max-width: 120px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>Question History</h1>
+            <nav class="navbar">
+                <span class="navbar-brand">LLM Progress Tracking</span>
+                <ul class="navbar-nav">
+                    <li class="nav-item">
+                        <a class="nav-link" href="/">Home</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link active" href="/database">Database</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="/visualization">Visualization</a>
+                    </li>
+                </ul>
+            </nav>
+        </header>
+        
+        <main>
+            <div class="database-controls">
+                <a href="/clear_database" class="danger-button" onclick="return confirm('Are you sure you want to clear the entire database?')">Clear Database</a>
+            </div>
+            
+            <div class="questions-list">
+                <h2>Stored Questions</h2>
+                
+                <div class="filter-controls">
+                    <div class="filter-group">
+                        <label for="theme-filter">Theme:</label>
+                        <select id="theme-filter">
+                            <option value="all">All Themes</option>
+                        </select>
+                    </div>
+                    <div class="filter-group">
+                        <label for="model-filter">Model:</label>
+                        <select id="model-filter">
+                            <option value="all">All Models</option>
+                        </select>
+                    </div>
+                    <div class="filter-group">
+                        <label for="difficulty-filter">Difficulty:</label>
+                        <select id="difficulty-filter">
+                            <option value="all">All Difficulties</option>
+                            <option value="easy">Easy</option>
+                            <option value="medium">Medium</option>
+                            <option value="hard">Hard</option>
+                        </select>
+                    </div>
+                </div>
+                
+                {% if questions %}
+                    <table id="questions-table" class="table table-striped">
+                        <thead>
+                            <tr>
+                                <th class="sortable">ID</th>
+                                <th class="sortable">Question</th>
+                                <th class="sortable">Date</th>
+                                <th class="sortable">Theme</th>
+                                <th class="sortable">Provider/Model</th>
+                                <th class="sortable">Status</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for question in questions %}
+                            <tr data-theme="{{ question[3] }}" data-model="{{ question[6] }}" data-difficulty="{{ question[8] }}" data-id="{{ question[0] }}">
+                                <td>{{ question[0] }}</td>
+                                <td>
+                                    <div class="question-text" title="{{ question[1] }}">{{ question[1] }}</div>
+                                </td>
+                                <td class="timestamp">{{ question[2].split(' ')[0] }}</td>
+                                <td>
+                                    <span class="theme-tag theme-{{ question[3]|lower if question[3] else 'other' }}">
+                                        {{ question[3] if question[3] else "Unknown" }}
+                                    </span>
+                                </td>
+                                <td>{{ question[5] }}/{{ question[6] }}</td>
+                                <td>
+                                    {% if question[8] == "easy" %}
+                                        <span class="badge bg-success">Easy</span>
+                                    {% elif question[8] == "medium" %}
+                                        <span class="badge bg-warning">Medium</span>
+                                    {% elif question[8] == "hard" %}
+                                        <span class="badge bg-danger">Hard</span>
+                                    {% else %}
+                                        <span class="badge bg-secondary">Unknown</span>
+                                    {% endif %}
+                                    {% if question[7] %}
+                                        <i class="fas fa-exclamation-triangle" style="color: #e57373;" title="Error"></i>
+                                    {% endif %}
+                                </td>
+                                <td class="actions">
+                                    <div class="action-buttons">
+                                        <a href="#" class="action-btn expand-btn" onclick="toggleDetails('{{ question[0] }}'); return false;"> 
+                                            <i class="fas fa-expand"></i>
+                                        </a>
+                                        <a href="/delete_question/{{ question[0] }}" class="action-btn delete-btn" onclick="return confirm('Delete this question?')">
+                                            <i class="fas fa-trash"></i>
+                                        </a>
+                                    </div>
+                                </td>
+                            </tr>
+                            <tr id="details-{{ question[0] }}" class="details-row">
+                                <td colspan="7">
+                                    <div class="details-content">
+                                        <p><strong>Full Question:</strong> {{ question[1] }}</p>
+                                        <p><strong>Timestamp:</strong> {{ question[2] }}</p>
+                                        <p><strong>Theme:</strong> {{ question[3] if question[3] else "Unknown" }}</p>
+                                        <p><strong>Subtheme:</strong> {{ question[4] if question[4] else "Unknown" }}</p>
+                                        <p><strong>Provider:</strong> {{ question[5] if question[5] else "Unknown" }}</p>
+                                        <p><strong>Model:</strong> {{ question[6] if question[6] else "Default" }}</p>
+                                        <p><strong>Is Error:</strong> {{ "Yes" if question[7] else "No" }}</p>
+                                        <p><strong>Difficulty:</strong> {{ question[8] if question[8] else "Unknown" }}</p>
+                                    </div>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                {% else %}
+                    <p>No questions in database.</p>
+                {% endif %}
+            </div>
+        </main>
+    </div>
+    
+    <script>
+        // Function to toggle details row
+        function toggleDetails(id) {
+            const detailsRow = document.getElementById('details-' + id);
+            if (!detailsRow) return;
+            
+            const allDetailRows = document.querySelectorAll('.details-row');
+            
+            // Close all other detail rows first
+            allDetailRows.forEach(row => {
+                if (row.id !== 'details-' + id && row.style.display === 'table-row') {
+                    row.style.display = 'none';
+                }
+            });
+            
+            // Toggle the selected row
+            if (detailsRow.style.display === 'table-row') {
+                detailsRow.style.display = 'none';
+            } else {
+                detailsRow.style.display = 'table-row';
+            }
+        }
+        
+        // Filter and sort functionality
+        document.addEventListener('DOMContentLoaded', function() {
+            // Populate filter options
+            const themeFilter = document.getElementById('theme-filter');
+            const modelFilter = document.getElementById('model-filter');
+            
+            // Get unique themes and models
+            const themes = new Set();
+            const models = new Set();
+            
+            document.querySelectorAll('#questions-table tbody tr:not(.details-row)').forEach(row => {
+                const theme = row.getAttribute('data-theme');
+                const model = row.getAttribute('data-model');
+                if (theme) themes.add(theme);
+                if (model) models.add(model);
+            });
+            
+            // Populate theme filter
+            themes.forEach(theme => {
+                const option = document.createElement('option');
+                option.value = theme;
+                option.textContent = theme || 'Unknown';
+                themeFilter.appendChild(option);
+            });
+            
+            // Populate model filter
+            models.forEach(model => {
+                const option = document.createElement('option');
+                option.value = model;
+                option.textContent = model || 'Default';
+                modelFilter.appendChild(option);
+            });
+            
+            // Apply filters when changed
+            const filters = document.querySelectorAll('#theme-filter, #model-filter, #difficulty-filter');
+            filters.forEach(filter => {
+                filter.addEventListener('change', applyFilters);
+            });
+            
+            function applyFilters() {
+                const selectedTheme = themeFilter.value;
+                const selectedModel = modelFilter.value;
+                const selectedDifficulty = document.getElementById('difficulty-filter').value;
+                
+                document.querySelectorAll('#questions-table tbody tr:not(.details-row)').forEach(row => {
+                    const rowTheme = row.getAttribute('data-theme') || '';
+                    const rowModel = row.getAttribute('data-model') || '';
+                    const rowDifficulty = row.getAttribute('data-difficulty') || '';
+                    const rowId = row.getAttribute('data-id');
+                    
+                    const themeMatch = selectedTheme === 'all' || rowTheme === selectedTheme;
+                    const modelMatch = selectedModel === 'all' || rowModel === selectedModel;
+                    const difficultyMatch = selectedDifficulty === 'all' || rowDifficulty === selectedDifficulty;
+                    
+                    const detailsRow = document.getElementById('details-' + rowId);
+                    
+                    if (themeMatch && modelMatch && difficultyMatch) {
+                        row.style.display = '';
+                    } else {
+                        row.style.display = 'none';
+                        // Also hide the details row if it exists and is visible
+                        if (detailsRow) {
+                            detailsRow.style.display = 'none';
+                        }
+                    }
+                });
+            }
+            
+            // Add sorting functionality
+            document.querySelectorAll('th.sortable').forEach(headerCell => {
+                headerCell.addEventListener('click', () => {
+                    const table = headerCell.closest('table');
+                    const headerIndex = Array.prototype.indexOf.call(headerCell.parentElement.children, headerCell);
+                    const currentIsAscending = headerCell.classList.contains('asc');
+                    
+                    // Remove all sort classes
+                    table.querySelectorAll('th').forEach(th => {
+                        th.classList.remove('asc');
+                        th.classList.remove('desc');
+                    });
+                    
+                    // Add appropriate sort class
+                    headerCell.classList.add(currentIsAscending ? 'desc' : 'asc');
+                    
+                    // Get all rows except details rows
+                    const dataRows = Array.from(table.querySelectorAll('tbody tr:not(.details-row)'));
+                    
+                    // Sort the rows
+                    const sortedRows = dataRows.sort((a, b) => {
+                        const aText = a.children[headerIndex].textContent.trim();
+                        const bText = b.children[headerIndex].textContent.trim();
+                        
+                        if (!isNaN(aText) && !isNaN(bText)) {
+                            return currentIsAscending ? 
+                                parseFloat(bText) - parseFloat(aText) : 
+                                parseFloat(aText) - parseFloat(bText);
+                        }
+                        
+                        return currentIsAscending ? 
+                            bText.localeCompare(aText) : 
+                            aText.localeCompare(bText);
+                    });
+                    
+                    // Remember details row visibility and assign new order
+                    const detailsState = {};
+                    const tbody = table.querySelector('tbody');
+                    
+                    dataRows.forEach(row => {
+                        const rowId = row.getAttribute('data-id');
+                        const detailsRow = document.getElementById('details-' + rowId);
+                        if (detailsRow) {
+                            detailsState[rowId] = detailsRow.style.display;
+                            tbody.removeChild(detailsRow);
+                        }
+                        tbody.removeChild(row);
+                    });
+                    
+                    // Add rows back in new order
+                    sortedRows.forEach(row => {
+                        const rowId = row.getAttribute('data-id');
+                        tbody.appendChild(row);
+                        const detailsRow = document.getElementById('details-' + rowId);
+                        if (detailsRow) {
+                            tbody.appendChild(detailsRow);
+                            if (detailsState[rowId]) {
+                                detailsRow.style.display = detailsState[rowId];
+                            }
+                        }
+                    });
+                });
+            });
+        });
+    </script>
+</body>
+</html>

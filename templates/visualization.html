@@ -1,0 +1,222 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Question Themes Visualization</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
+    <style>
+        :root {
+            --bg-primary: #121212;
+            --bg-secondary: #1e1e1e;
+            --bg-card: #252525;
+            --text-primary: #e0e0e0;
+            --text-secondary: #a0a0a0;
+            --accent-color: #7c4dff;
+            --accent-hover: #9370DB;
+            --success-color: #4CAF50;
+            --border-color: #333333;
+            --input-bg: #2d2d2d;
+        }
+        
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: var(--bg-primary);
+            color: var(--text-primary);
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            line-height: 1.6;
+        }
+        
+        .container {
+            width: 100%;
+            padding: 20px;
+            box-sizing: border-box;
+        }
+        
+        h1 {
+            color: var(--text-primary);
+            font-weight: 700;
+            margin-top: 0;
+            font-size: 2.2rem;
+            border-bottom: 1px solid var(--border-color);
+            padding-bottom: 10px;
+        }
+        
+        h2 {
+            color: var(--text-primary);
+            font-weight: 600;
+            font-size: 1.5rem;
+            margin-top: 0;
+        }
+        
+        .navbar {
+            background-color: var(--bg-secondary) !important;
+            border-radius: 8px;
+            padding: 10px 20px;
+            margin-bottom: 30px;
+            display: flex;
+            align-items: center;
+        }
+        
+        .navbar-brand {
+            color: var(--accent-color);
+            font-weight: 700;
+            font-size: 1.3rem;
+            text-decoration: none;
+        }
+        
+        .navbar-nav {
+            display: flex;
+            list-style: none;
+            padding-left: 0;
+            margin-left: 20px;
+            margin-bottom: 0;
+        }
+        
+        .nav-item {
+            display: inline-block;
+        }
+        
+        .nav-link {
+            color: var(--text-primary);
+            margin: 0 10px;
+            padding: 8px 16px;
+            border-radius: 6px;
+            transition: all 0.2s ease;
+            text-decoration: none;
+            display: block;
+        }
+        
+        .nav-link:hover {
+            background-color: rgba(124, 77, 255, 0.1);
+        }
+        
+        .nav-link.active {
+            background-color: var(--accent-color);
+            color: white;
+        }
+        
+        .chart-container {
+            height: 600px;
+            margin: 2rem 0;
+            background-color: var(--bg-secondary);
+            border-radius: 12px;
+            padding: 20px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
+        }
+        
+        .row {
+            display: flex;
+            flex-wrap: wrap;
+            margin-right: -15px;
+            margin-left: -15px;
+        }
+        
+        .col {
+            flex-basis: 0;
+            flex-grow: 1;
+            max-width: 100%;
+            padding-right: 15px;
+            padding-left: 15px;
+        }
+        
+        .mt-4 {
+            margin-top: 1.5rem;
+        }
+        
+        .card {
+            background-color: var(--bg-secondary);
+            border-radius: 12px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
+            border: none;
+            overflow: hidden;
+        }
+        
+        .card-header {
+            background-color: var(--bg-card);
+            color: var(--text-primary);
+            border-bottom: 1px solid var(--border-color);
+            padding: 15px 20px;
+            font-weight: 600;
+        }
+        
+        .card-body {
+            padding: 20px;
+            color: var(--text-secondary);
+        }
+        
+        @media (max-width: 768px) {
+            body {
+                padding: 10px;
+            }
+            
+            .chart-container {
+                height: 400px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <nav class="navbar">
+            <span class="navbar-brand">LLM Progress Tracking</span>
+            <ul class="navbar-nav">
+                <li class="nav-item">
+                    <a class="nav-link" href="/">Home</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="/database">Database</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link active" href="/visualization">Visualization</a>
+                </li>
+            </ul>
+        </nav>
+
+        <h1>Question Themes Visualization</h1>
+        
+        <div class="chart-container">
+            {{ plot_html | safe }}
+        </div>
+        
+        <div class="row mt-4">
+            <div class="col">
+                <div class="card">
+                    <div class="card-header">
+                        <h2>About the Visualizations</h2>
+                    </div>
+                    <div class="card-body">
+                        <p>This page shows the average difficulty of questions over time, helping to track progress and complexity trends in your LLM interactions.</p>
+                        <p>The y-axis represents the average difficulty score (higher means more difficult), while the x-axis shows the week of the year.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // Apply dark theme to Plotly charts if they exist
+            const plotlyElements = document.querySelectorAll('.plotly-graph-div');
+            if (plotlyElements.length > 0) {
+                const darkLayout = {
+                    paper_bgcolor: '#1e1e1e',
+                    plot_bgcolor: '#1e1e1e',
+                    font: { color: '#e0e0e0' },
+                    xaxis: { gridcolor: '#333333', zerolinecolor: '#333333' },
+                    yaxis: { gridcolor: '#333333', zerolinecolor: '#333333' }
+                };
+                
+                plotlyElements.forEach(plotEl => {
+                    if (plotEl._fullLayout) {
+                        Plotly.relayout(plotEl, darkLayout);
+                    }
+                });
+            }
+        });
+    </script>
+</body>
+</html>

@@ -1,0 +1,11 @@
+fastapi
+uvicorn
+jinja2
+python-multipart
+aiofiles
+flask>=2.0.0
+plotly>=5.10.0
+pandas>=1.3.0
+sqlite3
+openai==1.2.4
+python-dotenv==1.0.0
