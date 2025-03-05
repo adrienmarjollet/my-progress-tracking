@@ -1,0 +1,597 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Chat Interface - LLM Progress Tracking</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.28.0/themes/prism-tomorrow.min.css" rel="stylesheet">
+    <style>
+        :root {
+            --bg-primary: #121212;
+            --bg-secondary: #1e1e1e;
+            --bg-card: #252525;
+            --text-primary: #e0e0e0;
+            --text-secondary: #a0a0a0;
+            --accent-color: #7c4dff;
+            --accent-hover: #9370DB;
+            --success-color: #4CAF50;
+            --danger-color: #f44336;
+            --warning-color: #ff9800;
+            --border-color: #333333;
+            --input-bg: #2d2d2d;
+            --user-bubble-bg: rgba(124, 77, 255, 0.15);
+            --user-bubble-border: rgba(124, 77, 255, 0.3);
+            --assistant-bubble-bg: rgba(29, 29, 29, 0.5);
+            --assistant-bubble-border: rgba(70, 70, 70, 0.5);
+        }
+        
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: var(--bg-primary);
+            color: var(--text-primary);
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            line-height: 1.6;
+        }
+        
+        .container {
+            width: 100%;
+            padding: 20px;
+            box-sizing: border-box;
+        }
+        
+        header {
+            margin-bottom: 30px;
+        }
+        
+        h1, h2 {
+            color: var(--text-primary);
+            font-weight: 600;
+        }
+        
+        h1 {
+            font-size: 2.2rem;
+            border-bottom: 1px solid var(--border-color);
+            padding-bottom: 10px;
+        }
+        
+        .navbar {
+            background-color: var(--bg-secondary) !important;
+            border-radius: 8px;
+            padding: 10px 20px;
+            margin-bottom: 30px;
+            display: flex;
+            align-items: center;
+        }
+        
+        .navbar-brand {
+            color: var(--accent-color);
+            font-weight: 700;
+            font-size: 1.3rem;
+            text-decoration: none;
+        }
+        
+        .navbar-nav {
+            display: flex;
+            list-style: none;
+            padding-left: 0;
+            margin-left: 20px;
+            margin-bottom: 0;
+        }
+        
+        .nav-item {
+            display: inline-block;
+        }
+        
+        .nav-link {
+            color: var(--text-primary);
+            margin: 0 10px;
+            padding: 8px 16px;
+            border-radius: 6px;
+            transition: all 0.2s ease;
+            text-decoration: none;
+            display: block;
+        }
+        
+        .nav-link:hover {
+            background-color: rgba(124, 77, 255, 0.1);
+        }
+        
+        .nav-link.active {
+            background-color: var(--accent-color);
+            color: white;
+        }
+        
+        /* Chat interface specific styles */
+        .chat-container {
+            display: flex;
+            flex-direction: column;
+            height: calc(100vh - 250px);
+            min-height: 500px;
+            background-color: var(--bg-secondary);
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
+            border: 1px solid var(--border-color);
+        }
+        
+        .chat-header {
+            background-color: var(--bg-card);
+            padding: 15px;
+            border-bottom: 1px solid var(--border-color);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .chat-header h2 {
+            margin: 0;
+            font-size: 1.2rem;
+        }
+        
+        .new-chat-btn {
+            background-color: var(--accent-color);
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 0.9rem;
+            font-weight: 500;
+            transition: all 0.2s ease;
+            text-decoration: none;
+            display: inline-block;
+        }
+        
+        .new-chat-btn:hover {
+            background-color: var(--accent-hover);
+            transform: translateY(-1px);
+        }
+        
+        .chat-messages {
+            flex: 1;
+            overflow-y: auto;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+        
+        .message {
+            display: flex;
+            flex-direction: column;
+            max-width: 70%;
+            padding: 12px 16px;
+            border-radius: 12px;
+            position: relative;
+            animation: fadeIn 0.3s ease-out;
+        }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        .message.user {
+            align-self: flex-end;
+            background-color: var(--user-bubble-bg);
+            border: 1px solid var(--user-bubble-border);
+            border-bottom-right-radius: 4px;
+        }
+        
+        .message.assistant {
+            align-self: flex-start;
+            background-color: var(--assistant-bubble-bg);
+            border: 1px solid var(--assistant-bubble-border);
+            border-bottom-left-radius: 4px;
+        }
+        
+        .message-content {
+            color: var(--text-primary);
+            word-wrap: break-word;
+            white-space: pre-wrap;
+        }
+        
+        .message-timestamp {
+            margin-top: 6px;
+            font-size: 0.7rem;
+            color: var(--text-secondary);
+            align-self: flex-end;
+        }
+        
+        .message-avatar {
+            width: 28px;
+            height: 28px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: absolute;
+            bottom: -10px;
+            border-radius: 50%;
+            font-size: 0.8rem;
+            color: white;
+        }
+        
+        .message.user .message-avatar {
+            background-color: var(--accent-color);
+            right: -10px;
+        }
+        
+        .message.assistant .message-avatar {
+            background-color: var(--bg-card);
+            left: -10px;
+        }
+        
+        .chat-input {
+            background-color: var(--bg-card);
+            padding: 15px;
+            border-top: 1px solid var(--border-color);
+        }
+        
+        .chat-input form {
+            display: flex;
+            gap: 10px;
+        }
+        
+        .chat-input textarea {
+            flex: 1;
+            background-color: var(--input-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            padding: 12px;
+            color: var(--text-primary);
+            font-family: 'Inter', sans-serif;
+            resize: none;
+            min-height: 50px;
+            max-height: 150px;
+            font-size: 0.95rem;
+            line-height: 1.5;
+        }
+        
+        .chat-input textarea:focus {
+            outline: none;
+            border-color: var(--accent-color);
+            box-shadow: 0 0 0 2px rgba(124, 77, 255, 0.2);
+        }
+        
+        .send-btn {
+            background-color: var(--accent-color);
+            color: white;
+            border: none;
+            padding: 0;
+            width: 50px;
+            border-radius: 6px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+        
+        .send-btn:hover {
+            background-color: var(--accent-hover);
+        }
+        
+        .send-btn i {
+            font-size: 1.2rem;
+        }
+        
+        /* Model and provider selection */
+        .model-selector {
+            display: flex;
+            gap: 10px;
+            margin-top: 10px;
+        }
+        
+        .model-selector select {
+            background-color: var(--input-bg);
+            border: 1px solid var(--border-color);
+            color: var(--text-primary);
+            border-radius: 6px;
+            padding: 8px 12px;
+            font-size: 0.9rem;
+            -webkit-appearance: none;
+            -moz-appearance: none;
+            appearance: none;
+            background-image: url("data:image/svg+xml;utf8,<svg fill='gray' height='24' viewBox='0 0 24 24' width='24' xmlns='http://www.w3.org/2000/svg'><path d='M7 10l5 5 5-5z'/></svg>");
+            background-repeat: no-repeat;
+            background-position-x: calc(100% - 10px);
+            background-position-y: center;
+            padding-right: 30px;
+        }
+        
+        /* Code block styling */
+        .message pre {
+            background-color: #1a1a1a;
+            border-radius: 6px;
+            padding: 15px;
+            overflow-x: auto;
+            margin: 10px 0;
+            border: 1px solid #444;
+        }
+        
+        .message code {
+            font-family: 'Fira Code', 'Consolas', monospace;
+            font-size: 0.9rem;
+        }
+        
+        /* Feedback buttons */
+        .message-footer {
+            display: flex;
+            justify-content: flex-end;
+            margin-top: 8px;
+            gap: 8px;
+        }
+        
+        .feedback-btn {
+            background: none;
+            border: none;
+            color: var(--text-secondary);
+            font-size: 0.8rem;
+            cursor: pointer;
+            padding: 3px 8px;
+            border-radius: 4px;
+            transition: all 0.2s ease;
+        }
+        
+        .feedback-btn:hover {
+            background-color: rgba(124, 77, 255, 0.1);
+            color: var(--text-primary);
+        }
+        
+        .feedback-btn.selected-helpful {
+            color: var(--success-color);
+        }
+        
+        .feedback-btn.selected-not-helpful {
+            color: var(--danger-color);
+        }
+        
+        /* Copy code button */
+        .code-container {
+            position: relative;
+            margin: 15px 0;
+        }
+        
+        .copy-button {
+            position: absolute;
+            top: 5px;
+            right: 5px;
+            background-color: rgba(124, 77, 255, 0.3);
+            color: var(--text-primary);
+            border: none;
+            border-radius: 4px;
+            padding: 4px 8px;
+            font-size: 12px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+        
+        .copy-button:hover {
+            background-color: var(--accent-color);
+        }
+        
+        .copy-success {
+            background-color: var(--success-color) !important;
+        }
+        
+        /* Responsive styles */
+        @media (max-width: 768px) {
+            body {
+                padding: 10px;
+            }
+            
+            .container {
+                padding: 10px;
+            }
+            
+            .message {
+                max-width: 90%;
+            }
+            
+            .chat-input textarea {
+                font-size: 16px; /* Prevents iOS zoom on input */
+            }
+            
+            .model-selector {
+                flex-direction: column;
+            }
+            
+            .model-selector select {
+                width: 100%;
+            }
+        }
+    </style>
+    <script>
+        // This function will update the available models based on the selected provider
+        function updateModelOptions() {
+            const providerSelect = document.getElementById('provider');
+            const modelSelect = document.getElementById('model');
+            const selectedProvider = providerSelect.value;
+            
+            // Clear current options
+            modelSelect.innerHTML = '';
+            
+            // Get models for the selected provider
+            const models = JSON.parse(document.getElementById('models-data').textContent)[selectedProvider] || {};
+            
+            // Add options for each model
+            Object.entries(models).forEach(([modelId, modelName]) => {
+                const option = document.createElement('option');
+                option.value = modelId;
+                option.textContent = modelName;
+                // Set gpt-4o-mini as the default selected option if available
+                if (modelId === 'gpt-4o-mini') {
+                    option.selected = true;
+                }
+                modelSelect.appendChild(option);
+            });
+            
+            // If no models available, add a default option
+            if (modelSelect.options.length === 0) {
+                const option = document.createElement('option');
+                option.value = 'default';
+                option.textContent = 'Default';
+                modelSelect.appendChild(option);
+            }
+        }
+        
+        // Function to send feedback on assistant messages
+        function sendFeedback(conversationId, timestamp, isHelpful) {
+            const helpfulBtn = document.querySelector(`[data-timestamp="${timestamp}"] .feedback-helpful`);
+            const notHelpfulBtn = document.querySelector(`[data-timestamp="${timestamp}"] .feedback-not-helpful`);
+            
+            // Reset both buttons
+            helpfulBtn.classList.remove('selected-helpful');
+            notHelpfulBtn.classList.remove('selected-not-helpful');
+            
+            // Set the selected button
+            if (isHelpful === 1) {
+                helpfulBtn.classList.add('selected-helpful');
+            } else {
+                notHelpfulBtn.classList.add('selected-not-helpful');
+            }
+            
+            // Send the feedback to the server
+            fetch(`/chat_feedback/${conversationId}/${timestamp}/${isHelpful}`)
+                .then(response => response.json())
+                .catch(error => console.error('Error sending feedback:', error));
+        }
+        
+        // Function to auto resize the textarea
+        function autoResizeTextarea() {
+            const textarea = document.getElementById('message-input');
+            textarea.style.height = 'auto';
+            textarea.style.height = (textarea.scrollHeight) + 'px';
+        }
+        
+        // Function to submit on Enter (but allow Shift+Enter for new lines)
+        function handleEnterKey(event) {
+            if (event.key === 'Enter' && !event.shiftKey) {
+                event.preventDefault();
+                document.getElementById('chat-form').submit();
+            }
+        }
+    </script>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <nav class="navbar">
+                <span class="navbar-brand">LLM Progress Tracking</span>
+                <ul class="navbar-nav">
+                    <li class="nav-item">
+                        <a class="nav-link" href="/">Home</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link active" href="/chat">Chat</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="/database">Database</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="/visualization">Visualization</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="/conversations">Conversations</a>
+                    </li>
+                </ul>
+            </nav>
+        </header>
+        
+        <main>
+            <div class="chat-container">
+                <div class="chat-header">
+                    <h2>Chat Session</h2>
+                    <a href="/chat" class="new-chat-btn"><i class="fas fa-plus"></i> New Chat</a>
+                </div>
+                
+                <div class="chat-messages" id="chat-messages">
+                    {% if not messages %}
+                    <div class="message assistant">
+                        <div class="message-content">
+                            Hello! I'm your AI assistant. How can I help you today?
+                        </div>
+                        <div class="message-avatar">AI</div>
+                    </div>
+                    {% else %}
+                        {% for message in messages %}
+                            <div class="message {{ 'user' if message[0] else 'assistant' }}" {% if not message[0] %}data-timestamp="{{ message[2] }}"{% endif %}>
+                                <div class="message-content">
+                                    {{ message[1]|safe }}
+                                </div>
+                                <div class="message-timestamp">{{ message[2].split('.')[0] }}</div>
+                                <div class="message-avatar">{{ 'You' if message[0] else 'AI' }}</div>
+                                
+                                {% if not message[0] %}
+                                <div class="message-footer">
+                                    <button class="feedback-btn feedback-helpful" onclick="sendFeedback('{{ conversation_id }}', '{{ message[2] }}', 1)">
+                                        <i class="fas fa-thumbs-up"></i> Helpful
+                                    </button>
+                                    <button class="feedback-btn feedback-not-helpful" onclick="sendFeedback('{{ conversation_id }}', '{{ message[2] }}', 0)">
+                                        <i class="fas fa-thumbs-down"></i> Not helpful
+                                    </button>
+                                </div>
+                                {% endif %}
+                            </div>
+                        {% endfor %}
+                    {% endif %}
+                </div>
+                
+                <div class="chat-input">
+                    <form id="chat-form" method="POST" action="/chat/{{ conversation_id }}">
+                        <textarea 
+                            id="message-input" 
+                            name="message" 
+                            placeholder="Type your message here..." 
+                            required
+                            onkeydown="handleEnterKey(event)"
+                            oninput="autoResizeTextarea()"
+                        ></textarea>
+                        <button type="submit" class="send-btn">
+                            <i class="fas fa-paper-plane"></i>
+                        </button>
+                    </form>
+                    
+                    <div class="model-selector">
+                        <select id="provider" name="provider" form="chat-form" onchange="updateModelOptions()">
+                            {% for provider in providers %}
+                            <option value="{{ provider }}">{{ provider }}</option>
+                            {% endfor %}
+                        </select>
+                        <select id="model" name="model" form="chat-form">
+                            <!-- Will be populated by JavaScript -->
+                        </select>
+                    </div>
+                </div>
+            </div>
+        </main>
+        
+        <!-- Hidden data element for JavaScript -->
+        <script id="models-data" type="application/json">
+            {{ models|tojson }}
+        </script>
+        
+        <!-- Add Prism.js for syntax highlighting -->
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.28.0/components/prism-core.min.js"></script>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.28.0/plugins/autoloader/prism-autoloader.min.js"></script>
+        
+        <script>
+            // Initialize model options when page loads
+            document.addEventListener('DOMContentLoaded', function() {
+                updateModelOptions();
+                
+                // Scroll to bottom of chat
+                const chatMessages = document.getElementById('chat-messages');
+                chatMessages.scrollTop = chatMessages.scrollHeight;
+                
+                // Auto-resize the textarea
+                autoResizeTextarea();
+            });
+        </script>
+    </div>
+</body>
+</html>

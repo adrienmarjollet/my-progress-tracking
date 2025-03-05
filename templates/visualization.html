@@ -157,29 +157,87 @@
                 height: 400px;
             }
         }
+
+        .expander {
+            cursor: pointer;
+            background-color: var(--bg-card);
+            color: var(--text-primary);
+            padding: 10px;
+            border-radius: 6px;
+            margin-bottom: 10px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .expander-content {
+            display: none;
+            overflow: hidden;
+        }
     </style>
 </head>
 <body>
     <div class="container">
         <nav class="navbar">
-            <span class="navbar-brand">LLM Progress Tracking</span>
-            <ul class="navbar-nav">
-                <li class="nav-item">
-                    <a class="nav-link" href="/">Home</a>
-                </li>
-                <li class="nav-item">
-                    <a class="nav-link" href="/database">Database</a>
-                </li>
-                <li class="nav-item">
-                    <a class="nav-link active" href="/visualization">Visualization</a>
-                </li>
-            </ul>
+            <div class="container-fluid">
+                <span class="navbar-brand">LLM Progress Tracking</span>
+                <div class="collapse navbar-collapse">
+                    <ul class="navbar-nav">
+                        <li class="nav-item">
+                            <a class="nav-link" href="/">Home</a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="/chat">Chat</a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="/database">Database</a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link active" href="/visualization">Visualization</a>
+                        </li>
+                    </ul>
+                </div>
+            </div>
         </nav>
 
         <h1>Question Themes Visualization</h1>
         
-        <div class="chart-container">
-            {{ plot_html | safe }}
+        <div class="row">
+            <div class="col">
+                <div class="expander" onclick="toggleExpander('plot1')">
+                    <span>Question Themes Visualization</span>
+                    <span>&#x25BC;</span>
+                </div>
+                <div id="plot1" class="expander-content">
+                    <div class="chart-container">
+                        {{ plot_html | safe }}
+                    </div>
+                </div>
+            </div>
+            <div class="col">
+                <div class="expander" onclick="toggleExpander('plot2')">
+                    <span>Daily Question Type Ratios</span>
+                    <span>&#x25BC;</span>
+                </div>
+                <div id="plot2" class="expander-content">
+                    <div class="chart-container">
+                        {{ daily_ratio_plot | safe }}
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="row">
+            <div class="col">
+                <div class="expander" onclick="toggleExpander('plot3')">
+                    <span>Daily Question Difficulty Ratio (Line Chart)</span>
+                    <span>&#x25BC;</span>
+                </div>
+                <div id="plot3" class="expander-content">
+                    <div class="chart-container">
+                        {{ difficulty_ratio_line_plot | safe }}
+                    </div>
+                </div>
+            </div>
         </div>
         
         <div class="row mt-4">
@@ -191,6 +249,7 @@
                     <div class="card-body">
                         <p>This page shows the average difficulty of questions over time, helping to track progress and complexity trends in your LLM interactions.</p>
                         <p>The y-axis represents the average difficulty score (higher means more difficult), while the x-axis shows the week of the year.</p>
+                        <p>The "Daily Question Type Ratios" chart displays the percentage breakdown of question types (beginner, intermediate, and advanced) over days, helping you visualize how your question complexity evolves over time.</p>
                     </div>
                 </div>
             </div>
@@ -217,6 +276,15 @@
                 });
             }
         });
+
+        function toggleExpander(id) {
+            const content = document.getElementById(id);
+            if (content.style.display === "none" || content.style.display === "") {
+                content.style.display = "block";
+            } else {
+                content.style.display = "none";
+            }
+        }
     </script>
 </body>
 </html>

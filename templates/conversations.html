@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Conversations - LLM Progress Tracking</title>
+    <link rel="stylesheet" href="/static/style.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        /* Use the same styling as in index.html */
+        :root {
+            --bg-primary: #121212;
+            --bg-secondary: #1e1e1e;
+            --bg-card: #252525;
+            --text-primary: #e0e0e0;
+            --text-secondary: #a0a0a0;
+            --accent-color: #7c4dff;
+            --accent-hover: #9370DB;
+            --success-color: #4CAF50;
+            --border-color: #333333;
+            --input-bg: #2d2d2d;
+            --button-text: #ffffff;
+            --nav-active-text: #ffffff;
+        }
+        
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: var(--bg-primary);
+            color: var(--text-primary);
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            line-height: 1.6;
+            transition: all 0.3s ease;
+        }
+        
+        .container {
+            width: 100%;
+            padding: 20px;
+            box-sizing: border-box;
+        }
+        
+        header {
+            margin-bottom: 30px;
+        }
+        
+        /* Add table styling for conversations list */
+        .conversation-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 20px 0;
+            background-color: var(--bg-secondary);
+            border-radius: 8px;
+            overflow: hidden;
+        }
+        
+        .conversation-table th,
+        .conversation-table td {
+            padding: 12px 15px;
+            text-align: left;
+            border-bottom: 1px solid var(--border-color);
+        }
+        
+        .conversation-table th {
+            background-color: var(--bg-card);
+            color: var(--accent-color);
+            font-weight: 600;
+        }
+        
+        .conversation-table tbody tr:hover {
+            background-color: rgba(124, 77, 255, 0.1);
+        }
+        
+        .conversation-table a {
+            color: var(--accent-color);
+            text-decoration: none;
+        }
+        
+        .conversation-table a:hover {
+            text-decoration: underline;
+        }
+        
+        .action-buttons {
+            display: flex;
+            gap: 10px;
+            margin-top: 20px;
+        }
+        
+        .action-button {
+            padding: 8px 16px;
+            background-color: var(--accent-color);
+            color: var(--button-text);
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            text-decoration: none;
+            font-size: 0.9rem;
+            font-weight: 600;
+            transition: all 0.2s ease;
+        }
+        
+        .action-button:hover {
+            background-color: var(--accent-hover);
+            transform: translateY(-2px);
+        }
+        
+        .action-button.delete {
+            background-color: var(--danger-color, #f44336);
+        }
+        
+        .action-button.delete:hover {
+            background-color: #d32f2f;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <nav class="navbar">
+                <div class="container-fluid">
+                    <span class="navbar-brand">LLM Progress Tracking</span>
+                    <div class="collapse navbar-collapse">
+                        <ul class="navbar-nav">
+                            <li class="nav-item">
+                                <a class="nav-link" href="/">Home</a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link" href="/chat">Chat</a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link" href="/database">Database</a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link" href="/visualization">Visualization</a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link active" href="/conversations">Conversations</a>
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+            </nav>
+        </header>
+        
+        <main>
+            <h1>Conversation History</h1>
+            
+            {% if conversations %}
+                <table class="conversation-table">
+                    <thead>
+                        <tr>
+                            <th>First Message</th>
+                            <th>Theme</th>
+                            <th>Started</th>
+                            <th>Last Update</th>
+                            <th>Model</th>
+                            <th>Messages</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for conversation in conversations %}
+                        <tr>
+                            <td>
+                                <a href="/chat?conversation_id={{ conversation[0] }}">{{ conversation[1][:50] }}{% if conversation[1]|length > 50 %}...{% endif %}</a>
+                            </td>
+                            <td>{{ conversation[4] or 'Unknown' }}</td>
+                            <td>{{ conversation[2].split('.')[0] }}</td>
+                            <td>{{ conversation[3].split('.')[0] }}</td>
+                            <td>{{ conversation[6] }}</td>
+                            <td>{{ conversation[7] }}</td>
+                            <td>
+                                <a href="/chat?conversation_id={{ conversation[0] }}" class="action-button">Continue</a>
+                                <a href="/delete_conversation/{{ conversation[0] }}" class="action-button delete" onclick="return confirm('Are you sure you want to delete this conversation?')">Delete</a>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+                
+                <div class="action-buttons">
+                    <a href="/chat" class="action-button">New Chat</a>
+                    <a href="/clear_conversations" class="action-button delete" onclick="return confirm('Are you sure you want to delete ALL conversations? This cannot be undone.')">Delete All Conversations</a>
+                </div>
+            {% else %}
+                <p>No conversations found. <a href="/chat">Start a new chat</a> to begin.</p>
+            {% endif %}
+        </main>
+    </div>
+</body>
+</html>

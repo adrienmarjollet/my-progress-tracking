@@ -398,6 +398,9 @@
                         <a class="nav-link" href="/">Home</a>
                     </li>
                     <li class="nav-item">
+                        <a class="nav-link" href="/chat">Chat</a>
+                    </li>
+                    <li class="nav-item">
                         <a class="nav-link active" href="/database">Database</a>
                     </li>
                     <li class="nav-item">
@@ -530,6 +533,15 @@
                 {% else %}
                     <p>No questions in database.</p>
                 {% endif %}
+            </div>
+            
+            <div class="database-stats">
+                <div class="stats-card">
+                    <h3>Database Information</h3>
+                    <p><i class="fas fa-database"></i> Database Size: <span class="accent-text">{{ db_size if db_size is defined else 0 }} MB</span></p>
+                    <p><i class="fas fa-list"></i> Total Questions: <span class="accent-text">{{ questions|length if questions else 0 }}</span></p>
+                    <p><i class="fas fa-clock"></i> Last Updated: <span class="accent-text">{{ last_update if last_update is defined else "Unknown" }}</span></p>
+                </div>
             </div>
         </main>
     </div>

@@ -33,6 +33,29 @@ class OpenAIProvider(LLMProvider):
             return response.choices[0].message.content
         except Exception as e:
             return f"Error from OpenAI API: {str(e)}"
+        
+    def get_chat_response(self, message, history=None, model="gpt-4o-mini"):
+        """Get a response in a multi-turn conversation."""
+        try:
+            # Start with system message
+            messages = [{"role": "system", "content": "You are a helpful AI assistant."}]
+            
+            # Add conversation history if provided
+            if history and len(history) > 0:
+                messages.extend(history)
+            
+            # Add the new user message
+            messages.append({"role": "user", "content": message})
+            
+            # Get response from OpenAI
+            response = self.client.chat.completions.create(
+                model=model,
+                messages=messages
+            )
+            
+            return response.choices[0].message.content
+        except Exception as e:
+            return f"Error: {str(e)}"    
     
 
     def classify_theme(self, question: str, categories: list, model=None) -> str:
@@ -140,68 +163,6 @@ class OpenAIProvider(LLMProvider):
             
         except Exception as e:
             return "intermediate"  # Default to intermediate on error
-
-    # def classify_difficulty(self, question, model=None):
-    #     """
-    #     Classify the difficulty level of a question.
-        
-    #     Args:
-    #         question (str): The question to classify
-    #         model (str, optional): The model to use for classification
-            
-    #     Returns:
-    #         str: Difficulty level (easy, medium, hard)
-    #     """
-    #     if not model:
-    #         model = self.default_model
-            
-    #     prompt = f"""
-    #     Analyze the following question and classify its difficulty level as one of: easy, medium, or hard.
-    #     Consider the following criteria:
-    #     - Easy: Basic, straightforward questions that require simple knowledge or operations
-    #     - Medium: Questions requiring some analysis, understanding of concepts, or multi-step processes
-    #     - Hard: Complex questions requiring deep understanding, advanced concepts, debugging complex issues, etc.
-        
-    #     Question: {question}
-        
-    #     Your response should be only one word: easy, medium, or hard.
-    #     """
-
-    #     response = self.client.chat.completions.create(
-    #         model=model,
-    #         messages=[
-    #             # {"role": "system", "content": "You analyze text to determine if it contains an error message."},
-    #             {"role": "user", "content": prompt}
-    #         ],
-    #         max_tokens=20,
-    #         temperature=0.1
-    #     )
-        
-    #     result = response.choices[0].message.content.strip().lower()
-    #     return result == "error"
-            
-        # except Exception as e:
-        #     # Default to assuming it's a question if we can't determine
-        #     return False
-        
-        # try:
-        #     response = self._get_completion(prompt, model)
-        #     # Extract just the difficulty level and normalize to lowercase
-        #     difficulty = response.lower().strip()
-            
-        #     # Ensure the response is one of the valid categories
-        #     valid_difficulties = ["easy", "medium", "hard"]
-        #     if difficulty not in valid_difficulties:
-        #         # Find the closest match if response is not exact
-        #         for valid in valid_difficulties:
-        #             if valid in difficulty:
-        #                 return valid
-        #         return "medium"  # Default if no valid difficulty is detected
-            
-        #     return difficulty
-        # except Exception as e:
-        #     print(f"Error classifying difficulty: {e}")
-        #     return "unknown"
 
     def is_error_message(self, prompt: str, model=None) -> bool:
         """

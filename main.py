@@ -67,6 +67,21 @@ def init_db():
             )
         """)
         
+        # Create conversations table
+        conn.execute("""
+            CREATE TABLE IF NOT EXISTS conversations (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                conversation_id TEXT NOT NULL,
+                timestamp DATETIME NOT NULL,
+                provider TEXT,
+                model TEXT,
+                theme TEXT,
+                is_user BOOLEAN,
+                message TEXT NOT NULL,
+                helpful INTEGER
+            )
+        """)
+        
         # Check if columns exist, if not, add them
         cursor = conn.cursor()
         cursor.execute("PRAGMA table_info(questions)")
@@ -206,7 +221,7 @@ async def clear_database():
 async def visualization(request: Request):
     # Get data from the database
     with sqlite3.connect(DB) as conn:
-        df = pd.read_sql_query("SELECT theme, subtheme, is_error, is_error_msg, difficulty, helpful FROM questions WHERE theme IS NOT NULL", conn)
+        df = pd.read_sql_query("SELECT theme, subtheme, is_error, is_error_msg, difficulty, helpful, timestamp FROM questions WHERE theme IS NOT NULL", conn)
     
     # Count themes and create histogram
     if not df.empty:
@@ -309,13 +324,250 @@ async def visualization(request: Request):
             
             # Add to plots
             plot_html += "<br><br>" + pio.to_html(fig_helpful, full_html=False)
+        
+        # Create the daily question type ratios chart
+        if 'difficulty' in df.columns and 'timestamp' in df.columns and df['difficulty'].notna().any():
+            # Convert timestamp to date
+            df['date'] = pd.to_datetime(df['timestamp']).dt.date
+            
+            # Ensure all difficulty levels have standard names
+            difficulty_map = {
+                'easy': 'Beginner',
+                'medium': 'Intermediate',
+                'hard': 'Advanced',
+                'unknown': 'Unknown'
+            }
+            df['difficulty'] = df['difficulty'].map(difficulty_map).fillna('Unknown')
+            
+            # Group by date and difficulty, then calculate counts
+            daily_counts = df.groupby(['date', 'difficulty']).size().unstack().fillna(0)
+            
+            # If some difficulty levels are missing, add them with zeros
+            for level in ['Beginner', 'Intermediate', 'Advanced', 'Unknown']:
+                if level not in daily_counts.columns:
+                    daily_counts[level] = 0
+            
+            # Calculate the daily ratios
+            daily_total = daily_counts.sum(axis=1)
+            daily_ratios = daily_counts.div(daily_total, axis=0) * 100
+            
+            # Reset index to make date a column
+            daily_ratios = daily_ratios.reset_index()
+            
+            # Create the area chart
+            fig_daily_ratio = px.area(
+                daily_ratios, 
+                x='date', 
+                y=['Beginner', 'Intermediate', 'Advanced'],
+                title='Daily Question Difficulty Ratios',
+                labels={'value': 'Percentage', 'date': 'Date', 'variable': 'Difficulty Level'},
+                color_discrete_map={
+                    'Beginner': 'green',
+                    'Intermediate': 'orange',
+                    'Advanced': 'red'
+                }
+            )
+            
+            fig_daily_ratio.update_layout(
+                xaxis_title="Date",
+                yaxis_title="Percentage (%)",
+                template="plotly_white",
+                hovermode="x unified",
+                legend_title="Difficulty Level"
+            )
+            daily_ratio_plot = pio.to_html(fig_daily_ratio, full_html=False)
+
+            # Build a new line chart for daily difficulty ratios
+            melted_ratios = daily_ratios.melt(id_vars=["date"], var_name="Difficulty", value_name="Ratio")
+            fig_difficulty_ratio = px.line(
+                melted_ratios,
+                x="date",
+                y="Ratio",
+                color="Difficulty",
+                title="Daily Ratio of Question Difficulty Over Time (Days)"
+            )
+            fig_difficulty_ratio.update_layout(
+                xaxis_title="Date",
+                yaxis_title="Ratio (%)",
+                template="plotly_white",
+                hovermode="x unified",
+                legend_title="Difficulty"
+            )
+            difficulty_ratio_line_plot = pio.to_html(fig_difficulty_ratio, full_html=False)
+        else:
+            daily_ratio_plot = "<div class='alert alert-info'>No difficulty data available for daily ratio visualization</div>"
+            difficulty_ratio_line_plot = "<div class='alert alert-info'>No difficulty data available for difficulty ratio line chart</div>"
     else:
         plot_html = "<div class='alert alert-info'>No data available for visualization</div>"
+        daily_ratio_plot = "<div class='alert alert-info'>No data available for visualization</div>"
+        difficulty_ratio_line_plot = "<div class='alert alert-info'>No difficulty data available for difficulty ratio line chart</div>"
     
     return templates.TemplateResponse(
         "visualization.html",
-        {"request": request, "plot_html": plot_html}
+        {
+            "request": request, 
+            "plot_html": plot_html, 
+            "daily_ratio_plot": daily_ratio_plot,
+            "difficulty_ratio_line_plot": difficulty_ratio_line_plot
+        }
     )
+
+@app.get("/chat", response_class=HTMLResponse)
+async def chat_page(request: Request, conversation_id: str = None):
+    # Get available models for each provider
+    available_models = {}
+    for provider_name, provider_instance in providers.items():
+        if hasattr(provider_instance, 'get_available_models'):
+            available_models[provider_name] = provider_instance.get_available_models()
+    
+    messages = []
+    if conversation_id:
+        # Retrieve existing conversation
+        with sqlite3.connect(DB) as conn:
+            cursor = conn.cursor()
+            cursor.execute("SELECT is_user, message, timestamp FROM conversations WHERE conversation_id = ? ORDER BY timestamp", (conversation_id,))
+            messages = cursor.fetchall()
+    else:
+        # Generate a new conversation ID
+        import uuid
+        conversation_id = str(uuid.uuid4())
+    
+    return templates.TemplateResponse(
+        "chat.html",
+        {
+            "request": request, 
+            "conversation_id": conversation_id,
+            "messages": messages,
+            "providers": providers.keys(), 
+            "models": available_models
+        }
+    )
+
+@app.post("/chat/{conversation_id}")
+async def chat_message(
+    request: Request,
+    conversation_id: str,
+    message: str = Form(...),
+    provider: str = Form(DEFAULT_PROVIDER),
+    model: str = Form(DEFAULT_MODEL)
+):
+    timestamp = datetime.now()
+    llm_provider = providers.get(provider)
+    
+    # Save user message to the database
+    with sqlite3.connect(DB) as conn:
+        conn.execute(
+            "INSERT INTO conversations (conversation_id, timestamp, provider, model, is_user, message) VALUES (?, ?, ?, ?, ?, ?)",
+            (conversation_id, timestamp, provider, model, True, message)
+        )
+        conn.commit()
+    
+    # Get LLM response
+    if llm_provider:
+        # Retrieve conversation history for context
+        with sqlite3.connect(DB) as conn:
+            cursor = conn.cursor()
+            cursor.execute("SELECT is_user, message FROM conversations WHERE conversation_id = ? ORDER BY timestamp", (conversation_id,))
+            history = cursor.fetchall()
+            
+        # Format history for the LLM
+        formatted_history = []
+        for is_user, msg in history:
+            role = "user" if is_user else "assistant"
+            formatted_history.append({"role": role, "content": msg})
+        
+        # Get response from LLM with conversation history
+        llm_response = llm_provider.get_chat_response(message, formatted_history, model=model)
+        
+        # Classify the theme of the conversation
+        if len(formatted_history) <= 1:  # Only for the first interaction
+            theme = llm_provider.classify_theme(message, SUBJECT_CATEGORIES, model=THEME_ANALYSIS_MODEL)
+        else:
+            # Get the existing theme
+            with sqlite3.connect(DB) as conn:
+                cursor = conn.cursor()
+                cursor.execute("SELECT theme FROM conversations WHERE conversation_id = ? AND theme IS NOT NULL LIMIT 1", (conversation_id,))
+                result = cursor.fetchone()
+                theme = result[0] if result else llm_provider.classify_theme(message, SUBJECT_CATEGORIES, model=THEME_ANALYSIS_MODEL)
+    else:
+        llm_response = "Selected provider not available."
+        theme = "other"
+    
+    # Save LLM response to the database
+    with sqlite3.connect(DB) as conn:
+        conn.execute(
+            "INSERT INTO conversations (conversation_id, timestamp, provider, model, theme, is_user, message) VALUES (?, ?, ?, ?, ?, ?, ?)",
+            (conversation_id, datetime.now(), provider, model, theme, False, llm_response)
+        )
+        conn.commit()
+    
+    # Retrieve the updated conversation
+    with sqlite3.connect(DB) as conn:
+        cursor = conn.cursor()
+        cursor.execute("SELECT is_user, message, timestamp FROM conversations WHERE conversation_id = ? ORDER BY timestamp", (conversation_id,))
+        messages = cursor.fetchall()
+    
+    # Get available models for the response template
+    available_models = {}
+    for provider_name, provider_instance in providers.items():
+        if hasattr(provider_instance, 'get_available_models'):
+            available_models[provider_name] = provider_instance.get_available_models()
+    
+    return templates.TemplateResponse(
+        "chat.html",
+        {
+            "request": request,
+            "conversation_id": conversation_id,
+            "messages": messages,
+            "providers": providers.keys(),
+            "models": available_models
+        }
+    )
+
+@app.get("/chat_feedback/{conversation_id}/{message_timestamp}/{helpful}")
+async def chat_feedback(conversation_id: str, message_timestamp: str, helpful: int):
+    with sqlite3.connect(DB) as conn:
+        conn.execute("UPDATE conversations SET helpful = ? WHERE conversation_id = ? AND timestamp = ?", 
+                    (helpful, conversation_id, message_timestamp))
+    return {"success": True}
+
+@app.get("/conversations", response_class=HTMLResponse)
+async def view_conversations(request: Request):
+    with sqlite3.connect(DB) as conn:
+        cursor = conn.cursor()
+        # Get distinct conversations with their first message and last update time
+        cursor.execute("""
+            SELECT 
+                c1.conversation_id, 
+                (SELECT message FROM conversations WHERE conversation_id = c1.conversation_id AND is_user = 1 ORDER BY timestamp LIMIT 1) as first_message,
+                MIN(c1.timestamp) as start_time,
+                MAX(c1.timestamp) as last_update,
+                (SELECT theme FROM conversations WHERE conversation_id = c1.conversation_id AND theme IS NOT NULL LIMIT 1) as theme,
+                (SELECT provider FROM conversations WHERE conversation_id = c1.conversation_id LIMIT 1) as provider,
+                (SELECT model FROM conversations WHERE conversation_id = c1.conversation_id LIMIT 1) as model,
+                COUNT(*) as message_count
+            FROM conversations c1
+            GROUP BY c1.conversation_id
+            ORDER BY last_update DESC
+        """)
+        conversations = cursor.fetchall()
+    
+    return templates.TemplateResponse(
+        "conversations.html",  # You'll need to create this template
+        {"request": request, "conversations": conversations}
+    )
+
+@app.get("/delete_conversation/{conversation_id}")
+async def delete_conversation(conversation_id: str):
+    with sqlite3.connect(DB) as conn:
+        conn.execute("DELETE FROM conversations WHERE conversation_id = ?", (conversation_id,))
+    return RedirectResponse(url="/conversations")
+
+@app.get("/clear_conversations")
+async def clear_conversations():
+    with sqlite3.connect(DB) as conn:
+        conn.execute("DELETE FROM conversations")
+    return RedirectResponse(url="/conversations")
 
 if __name__ == "__main__":
     import uvicorn
