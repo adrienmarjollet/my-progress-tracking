@@ -1,0 +1,15 @@
+You are tasked with classifying the following text into one of the provided {label_type}.
+
+TEXT TO CLASSIFY:
+{text}
+
+POSSIBLE LABELS:
+{labels}
+
+INSTRUCTIONS:
+1. Consider the text carefully
+2. Choose the most appropriate label from the options provided
+3. Respond with ONLY the chosen label and nothing else
+4. If uncertain, choose the label that fits best
+
+CLASSIFICATION:
