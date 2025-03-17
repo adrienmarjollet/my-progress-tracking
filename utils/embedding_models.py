@@ -17,7 +17,7 @@ def cosine_similarity(a, b):
   return dot_product / (norm_a * norm_b)
 
 
-def retrieve_n_closest_vectors(query, VECTOR_DB, top_n=3):
+def retrieve_n_closest_vectors(query, VECTOR_DB, top_n=2):
   # TODO: we get it as text in the first place, so translate it first.
   query_embedding = get_embedding(query)
   # temporary list to store (chunk, similarity) pairs
