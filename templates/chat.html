@@ -375,7 +375,7 @@
         }
         
         .copy-success {
-            background-color: var(--success-color) !important;
+            background-color: var (--success-color) !important;
         }
         
         /* Responsive styles */
@@ -521,7 +521,11 @@
                         {% for message in messages %}
                             <div class="message {{ 'user' if message[0] else 'assistant' }}" {% if not message[0] %}data-timestamp="{{ message[2] }}"{% endif %}>
                                 <div class="message-content">
-                                    {{ message[1]|safe }}
+                                    {% if is_user %}
+                                        <div class="user-message">{{ message }}</div>
+                                    {% else %}
+                                        <div class="assistant-message">{{ message|safe }}</div>
+                                    {% endif %}
                                 </div>
                                 <div class="message-timestamp">{{ message[2].split('.')[0] }}</div>
                                 <div class="message-avatar">{{ 'You' if message[0] else 'AI' }}</div>

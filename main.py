@@ -15,6 +15,8 @@ from datetime import datetime
 import plotly.express as px
 import plotly.io as pio
 import pandas as pd
+import markdown  # Add markdown library
+from markdown.extensions import codehilite, fenced_code, tables
 
 from llm_providers.openai_provider import OpenAIProvider
 from llm_providers.ollama_provider import OllamaProvider
@@ -161,6 +163,21 @@ async def index(request: Request):
         {"request": request, "answer": None, "providers": providers.keys(), "models": available_models}
     )
 
+# Add a function to convert markdown to HTML
+def convert_markdown_to_html(md_text):
+    # Configure markdown extensions for better rendering
+    extensions = [
+        'fenced_code',        # For code blocks with ```
+        'codehilite',         # For syntax highlighting
+        'tables',             # For table support
+        'nl2br',              # Convert newlines to <br>
+        'sane_lists',         # Better list handling
+    ]
+    
+    # Convert markdown to HTML
+    html = markdown.markdown(md_text, extensions=extensions)
+    return html
+
 @app.post("/")
 async def handle_question(
     request: Request,
@@ -178,6 +195,8 @@ async def handle_question(
     if llm_provider:
         answer = llm_provider.get_response(question, model=model)
         logging.info(f"answer : {answer}")
+        # Convert markdown answer to HTML
+        answer = convert_markdown_to_html(answer)
         # Use the dedicated model for theme classification
         theme = llm_provider.classify_theme(question, SUBJECT_CATEGORIES, model=THEME_ANALYSIS_MODEL)
         sub_theme = llm_provider.classify_subtheme(question, theme, DICT_CATEGORIES[theme], model=THEME_ANALYSIS_MODEL)
@@ -511,6 +530,9 @@ async def chat_message(
         # Get response from LLM with conversation history
         llm_response = llm_provider.get_chat_response(message, formatted_history, model=model)
         
+        # Convert markdown response to HTML
+        llm_response_html = convert_markdown_to_html(llm_response)
+        
         # Classify the theme of the conversation
         if len(formatted_history) <= 1:  # Only for the first interaction
             theme = llm_provider.classify_theme(message, SUBJECT_CATEGORIES, model=THEME_ANALYSIS_MODEL)
@@ -523,9 +545,10 @@ async def chat_message(
                 theme = result[0] if result else llm_provider.classify_theme(message, SUBJECT_CATEGORIES, model=THEME_ANALYSIS_MODEL)
     else:
         llm_response = "Selected provider not available."
+        llm_response_html = llm_response
         theme = "other"
     
-    # Save LLM response to the database
+    # Save original markdown response to the database
     with sqlite3.connect(DB) as conn:
         conn.execute(
             "INSERT INTO conversations (conversation_id, timestamp, provider, model, theme, is_user, message) VALUES (?, ?, ?, ?, ?, ?, ?)",
@@ -539,6 +562,14 @@ async def chat_message(
         cursor.execute("SELECT is_user, message, timestamp FROM conversations WHERE conversation_id = ? ORDER BY timestamp", (conversation_id,))
         messages = cursor.fetchall()
     
+    # Convert all assistant messages to HTML for display
+    processed_messages = []
+    for is_user, msg, ts in messages:
+        if not is_user:
+            processed_messages.append((is_user, convert_markdown_to_html(msg), ts))
+        else:
+            processed_messages.append((is_user, msg, ts))
+    
     # Get available models for the response template
     available_models = {}
     for provider_name, provider_instance in providers.items():
@@ -550,7 +581,7 @@ async def chat_message(
         {
             "request": request,
             "conversation_id": conversation_id,
-            "messages": messages,
+            "messages": processed_messages,
             "providers": providers.keys(),
             "models": available_models
         }
