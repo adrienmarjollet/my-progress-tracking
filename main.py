@@ -31,6 +31,8 @@ from config import (
     DICT_CATEGORIES
 )
 
+from utils.embedding_models import get_embedding
+
 # Configure basic logging
 logging.basicConfig(
     filename = "app.log",
@@ -77,6 +79,15 @@ def init_db():
                 is_user BOOLEAN,
                 message TEXT NOT NULL,
                 helpful INTEGER
+            )
+        """)
+        
+        # Create question_embeddings table
+        conn.execute("""
+            CREATE TABLE IF NOT EXISTS question_embeddings (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                question TEXT NOT NULL,
+                embeddings TEXT NOT NULL
             )
         """)
         
@@ -204,17 +215,22 @@ async def handle_question(
         is_error_msg = llm_provider.is_error_message(question, model=THEME_ANALYSIS_MODEL)
         # Determine difficulty of the question (easy, medium, hard)
         difficulty = llm_provider.judge_difficulty_level(question, model=DIFFICULTY_ANALYSIS_MODEL)
-    else:
-        answer = "Selected provider not available."
-        theme = "other"
-        sub_theme = "unknown"
-        is_error_msg = False
-        difficulty = "unknown"
+        # compute embedding of the question and store it in the db.
+        question_embedding = get_embedding(question)
+        
+        # add question_embedding to the column embedding
+
+    # else:
+    #     answer = "Selected provider not available."
+    #     theme = "other"
+    #     sub_theme = "unknown"
+    #     is_error_msg = False
+    #     difficulty = "unknown"
     
     with sqlite3.connect(DB) as conn:
         conn.execute(
-            "INSERT INTO questions (question, timestamp, theme, subtheme, provider, model, is_error, difficulty, is_error_msg, helpful) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
-            (question, timestamp, theme, sub_theme, provider, model, is_error_msg, difficulty, is_error_msg, None)
+            "INSERT INTO questions (question, timestamp, theme, subtheme, provider, model, is_error, difficulty, is_error_msg, helpful, embedding) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?,?)",
+            (question, timestamp, theme, sub_theme, provider, model, is_error_msg, difficulty, is_error_msg, None, str(question_embedding))
         )
         # Get the last insert id
         cursor = conn.cursor()
@@ -249,7 +265,7 @@ async def submit_feedback(question_id: int, helpful: int):
 async def database(request: Request):
     with sqlite3.connect(DB) as conn:
         cursor = conn.cursor()
-        cursor.execute("SELECT id, question, timestamp, theme, subtheme, provider, model, is_error, difficulty, is_error_msg, helpful FROM questions ORDER BY timestamp DESC")
+        cursor.execute("SELECT id, question, timestamp, theme, subtheme, provider, model, is_error, difficulty, is_error_msg, helpful, embedding FROM questions ORDER BY timestamp DESC")
         questions = cursor.fetchall()
     return templates.TemplateResponse(
         "database.html",

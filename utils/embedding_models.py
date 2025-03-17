@@ -1,11 +1,14 @@
 import ollama
 
+
 # Initialize ollama provider
 EMBEDDING_MODEL = 'hf.co/CompendiumLabs/bge-base-en-v1.5-gguf'
+
 
 def get_embedding(chunk):
     """Get embedding for the provided text"""
     return ollama.embed(model=EMBEDDING_MODEL, input=chunk)['embeddings'][0]
+
 
 def cosine_similarity(a, b):
   dot_product = sum([x * y for x, y in zip(a, b)])
