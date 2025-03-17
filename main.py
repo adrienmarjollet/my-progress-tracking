@@ -1,6 +1,7 @@
 import sqlite3
 import os
 import logging
+import json
 
 from fastapi import FastAPI, Request, Form
 from fastapi.responses import HTMLResponse, RedirectResponse
@@ -29,7 +30,6 @@ from config import (
     DIFFICULTY_ANALYSIS_MODEL,
     DICT_CATEGORIES
 )
-
 
 # Configure basic logging
 logging.basicConfig(

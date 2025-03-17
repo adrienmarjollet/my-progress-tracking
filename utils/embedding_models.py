@@ -1,17 +1,27 @@
-import sys
-import os
-sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-from llm_providers.ollama_provider import OllamaProvider
+import ollama
 
 # Initialize ollama provider
-ollama_client = OllamaProvider()
 EMBEDDING_MODEL = 'hf.co/CompendiumLabs/bge-base-en-v1.5-gguf'
 
-def get_embedding(text):
+def get_embedding(chunk):
     """Get embedding for the provided text"""
-    return ollama_client.embed(text, model=EMBEDDING_MODEL)
+    return ollama.embed(model=EMBEDDING_MODEL, input=chunk)['embeddings'][0]
 
-def add_chunk_to_database(VECTOR_DB, chunk):
-    embedding = get_embedding(chunk)
-    VECTOR_DB.append((chunk, embedding))
+def cosine_similarity(a, b):
+  dot_product = sum([x * y for x, y in zip(a, b)])
+  norm_a = sum([x ** 2 for x in a]) ** 0.5
+  norm_b = sum([x ** 2 for x in b]) ** 0.5
+  return dot_product / (norm_a * norm_b)
 
+
+def retrieve_n_closest_vectors(query, VECTOR_DB, top_n=3):
+  query_embedding = get_embedding(query)
+  # temporary list to store (chunk, similarity) pairs
+  similarities = []
+  for chunk, embedding in VECTOR_DB:
+    similarity = cosine_similarity(query_embedding, embedding)
+    similarities.append((chunk, similarity))
+  # sort by similarity in descending order, because higher similarity means more relevant chunks
+  similarities.sort(key=lambda x: x[1], reverse=True)
+  # finally, return the top N most relevant chunks
+  return similarities[:top_n]
