@@ -466,6 +466,71 @@
             padding: 0.5em;
             text-align: center;
         }
+        
+        /* Add styles for similar questions */
+        .similar-questions {
+            margin-top: 20px;
+            padding-top: 15px;
+            border-top: 1px solid var(--border-color);
+        }
+        
+        .similar-questions h3 {
+            font-size: 1.1rem;
+            color: var(--accent-color);
+            margin-bottom: 10px;
+        }
+        
+        .similar-questions-list {
+            list-style: none;
+            padding: 0;
+        }
+        
+        .similar-question-item {
+            background-color: var(--bg-secondary);
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            padding: 10px 15px;
+            margin-bottom: 8px;
+            position: relative;
+            padding-top: 30px; /* Increased padding to make room for meta information */
+        }
+        
+        .similarity-score {
+            position: absolute;
+            top: 8px;
+            right: 10px;
+            background-color: rgba(124, 77, 255, 0.2);
+            color: var(--accent-color);
+            padding: 2px 8px;
+            border-radius: 12px;
+            font-size: 0.8rem;
+            font-weight: 600;
+        }
+        
+        .similar-question-text {
+            padding-right: 70px; /* Make room for the score */
+            color: var(--text-primary);
+            font-size: 0.95rem;
+        }
+
+        /* Updated styles for similar questions with time elapsed on the left */
+        .similar-question-meta {
+            position: absolute;
+            top: 8px;
+            right: 10px;
+            display: flex;
+            gap: 10px;
+            align-items: center;
+        }
+        
+        .time-elapsed {
+            background-color: rgba(76, 175, 80, 0.1);
+            color: var(--success-color);
+            padding: 2px 8px;
+            border-radius: 12px;
+            font-size: 0.8rem;
+            font-weight: 600;
+        }
     </style>
     <!-- Configure MathJax for dark theme compatibility -->
     <script>
@@ -577,18 +642,49 @@
             {% if answer %}
             <div class="answer">
                 <h2>✨ Response</h2>
+                
+                <!-- Similar questions section with days elapsed -->
+                {% if similar_questions %}
+                <div class="similar-questions">
+                    <h3>Similar Questions You Might Find Helpful</h3>
+                    <ul class="similar-questions-list">
+                        {% for question in similar_questions %}
+                        <li class="similar-question-item">
+                            <div class="similar-question-meta">
+                                <!-- Swapped order: time elapsed now comes before similarity score -->
+                                {% if question.days_elapsed is not none %}
+                                <span class="time-elapsed">
+                                    {% if question.days_elapsed == 0 %}
+                                    Today
+                                    {% elif question.days_elapsed == 1 %}
+                                    Yesterday
+                                    {% else %}
+                                    {{ question.days_elapsed }} days ago
+                                    {% endif %}
+                                </span>
+                                {% endif %}
+                                <span class="similarity-score">{{ question.similarity }}% similar</span>
+                            </div>
+                            <div class="similar-question-text">{{ question.text }}</div>
+                        </li>
+                        {% endfor %}
+                    </ul>
+                </div>
+                {% endif %}
+                
+                <!-- Answer content moved below similar questions -->
                 <div class="answer-content">
                     {{ answer|safe }}
                 </div>
                 
-                <!-- Add feedback section -->
+                <!-- Feedback section remains at the bottom -->
                 <div class="feedback-container">
                     <div class="feedback-text">Was this response helpful?</div>
                     <div class="feedback-buttons">
-                        <button class="feedback-btn feedback-btn-helpful" onclick="submitFeedback({question_id }, 1)">
+                        <button class="feedback-btn feedback-btn-helpful" onclick="submitFeedback({{ question_id }}, 1)">
                             <span class="feedback-icon">👍</span> Helpful
                         </button>
-                        <button class="feedback-btn feedback-btn-not-helpful" onclick="submitFeedback({ question_id }, 0)">
+                        <button class="feedback-btn feedback-btn-not-helpful" onclick="submitFeedback({{ question_id }}, 0)">
                             <span class="feedback-icon">👎</span> Not helpful
                         </button>
                     </div>

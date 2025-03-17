@@ -245,19 +245,65 @@ async def handle_question(
         # compute embedding of the question and store it in the db.
         question_embedding = get_embedding(question)
         
-        # add question_embedding to the column embedding
+        # Retrieve similar questions from the database
+        similar_questions = []
+        with sqlite3.connect(DB) as conn:
+            # Get all previous questions with their embeddings
+            cursor = conn.cursor()
+            cursor.execute("SELECT id, question, embedding, timestamp FROM questions WHERE question != ?", (question,))
+            previous_questions = cursor.fetchall()
+            
+            # Convert string embeddings back to lists of floats
+            vector_db = []
+            question_timestamps = {}  # Store timestamps for each question
+            
+            for q_id, q_text, q_embedding, q_timestamp in previous_questions:
+                try:
+                    # Parse the embedding from string representation to list
+                    embedding_list = json.loads(q_embedding.replace("'", "\"")) if q_embedding else None
+                    if embedding_list:
+                        vector_db.append(({"id": q_id, "text": q_text}, embedding_list))
+                        question_timestamps[q_id] = q_timestamp  # Save the timestamp
+                except (json.JSONDecodeError, AttributeError) as e:
+                    logging.error(f"Error parsing embedding for question {q_id}: {e}")
+            
+            # Find similar questions if we have any in the database
+            if vector_db:
+                from utils.embedding_models import retrieve_n_closest_vectors
+                similar_results = retrieve_n_closest_vectors(question, vector_db, top_n=2)
+                
+                for result in similar_results:
+                    q_id = result[0]["id"]
+                    q_text = result[0]["text"]
+                    similarity = round(result[1] * 100, 2)
+                    
+                    # Calculate days elapsed
+                    days_elapsed = None
+                    if q_id in question_timestamps:
+                        try:
+                            # Parse the timestamp
+                            question_date = datetime.strptime(question_timestamps[q_id], "%Y-%m-%d %H:%M:%S.%f")
+                            days_elapsed = (timestamp - question_date).days
+                        except ValueError:
+                            # Try without microseconds if that format fails
+                            try:
+                                question_date = datetime.strptime(question_timestamps[q_id], "%Y-%m-%d %H:%M:%S")
+                                days_elapsed = (timestamp - question_date).days
+                            except:
+                                logging.error(f"Could not parse timestamp for question {q_id}")
+                    
+                    similar_questions.append({
+                        "id": q_id, 
+                        "text": q_text, 
+                        "similarity": similarity,
+                        "days_elapsed": days_elapsed
+                    })
 
-    # else:
-    #     answer = "Selected provider not available."
-    #     theme = "other"
-    #     sub_theme = "unknown"
-    #     is_error_msg = False
-    #     difficulty = "unknown"
-    
+    # Store the question with its embedding
     with sqlite3.connect(DB) as conn:
         conn.execute(
-            "INSERT INTO questions (question, timestamp, theme, subtheme, provider, model, is_error, difficulty, is_error_msg, helpful, embedding) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?,?)",
-            (question, timestamp, theme, sub_theme, provider, model, is_error_msg, difficulty, is_error_msg, None, str(question_embedding))
+            "INSERT INTO questions (question, timestamp, theme, subtheme, provider, model, is_error, difficulty, is_error_msg, helpful, embedding) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+            (question, timestamp, theme, sub_theme, provider, model, is_error_msg, difficulty, is_error_msg, None, json.dumps(question_embedding))
         )
         # Get the last insert id
         cursor = conn.cursor()
@@ -277,7 +323,8 @@ async def handle_question(
             "answer": answer, 
             "providers": providers.keys(), 
             "models": available_models,
-            "question_id": question_id
+            "question_id": question_id,
+            "similar_questions": similar_questions  # Pass similar questions to the template
         }
     )
 
