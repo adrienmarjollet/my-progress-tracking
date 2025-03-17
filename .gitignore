@@ -4,6 +4,10 @@
 # Database
 *.db
 
+# log files
+*.log
+logs/
+
 # Python
 __pycache__/
 *.py[cod]

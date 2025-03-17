@@ -1,11 +1,14 @@
 import sqlite3
 import os
+import logging
 
 from fastapi import FastAPI, Request, Form
 from fastapi.responses import HTMLResponse, RedirectResponse
 from fastapi.templating import Jinja2Templates
 from fastapi.staticfiles import StaticFiles
 from fastapi.middleware.cors import CORSMiddleware
+
+from contextlib import asynccontextmanager
 
 from typing import Optional
 from datetime import datetime
@@ -14,39 +17,32 @@ import plotly.io as pio
 import pandas as pd
 
 from llm_providers.openai_provider import OpenAIProvider
+from llm_providers.ollama_provider import OllamaProvider
 
-from config import OPENAI_API_KEY, DEFAULT_PROVIDER, DEFAULT_MODEL, DICT_CATEGORIES
+from config import (
+    OPENAI_API_KEY,
+    DEFAULT_PROVIDER,
+    DICT_DEFAULT_MODEL,
+    THEME_ANALYSIS_MODEL,
+    DIFFICULTY_ANALYSIS_MODEL,
+    DICT_CATEGORIES
+)
+
+
+# Configure basic logging
+logging.basicConfig(
+    filename = "app.log",
+    filemode = "w",
+    level=logging.INFO,  # Set the threshold level
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
+    datefmt='%Y-%m-%d %H:%M:%S')
+
+# Create a logger
+logger = logging.getLogger(__name__)
 
 SUBJECT_CATEGORIES = DICT_CATEGORIES.keys()
 
-THEME_ANALYSIS_MODEL = "gpt-4o-mini"  # Dedicated model for theme analysis
-
-DIFFICULTY_ANALYSIS_MODEL = "gpt-4o-mini"
-
-app = FastAPI()
-
-# Configure CORS
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=["*"],
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
-)#TODO: this is very permissive for now, see later what can be more suitable.
-
-# Setup templates and static files
-templates = Jinja2Templates(directory="templates")
-
-# Create static directory if it doesn't exist
-os.makedirs("static", exist_ok=True)
-app.mount("/static", StaticFiles(directory="static"), name="static")
-
 DB = 'questions.db'
-
-# Initialize LLM providers
-providers = {
-    'openai': OpenAIProvider(OPENAI_API_KEY),
-}
 
 def init_db():
     with sqlite3.connect(DB) as conn:
@@ -114,9 +110,43 @@ def init_db():
             
         conn.commit()
 
-@app.on_event("startup")
-async def startup_event():
+# @app.on_event("startup")
+# async def startup_event():
+#     init_db()
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    # Load the ML model
     init_db()
+    logger.info("init_db() initialized from lifespan function with asynxcontextmanager")
+    yield
+
+app = FastAPI(lifespan=lifespan)
+
+# Configure CORS
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)#TODO: this is very permissive for now, see later what can be more suitable.
+
+# Setup templates and static files
+templates = Jinja2Templates(directory="templates")
+
+# Create static directory if it doesn't exist
+os.makedirs("static", exist_ok=True)
+app.mount("/static", StaticFiles(directory="static"), name="static")
+
+
+# Initialize LLM providers
+providers = {
+    'openai': OpenAIProvider(OPENAI_API_KEY),
+    'ollama': OllamaProvider(),
+}
+
+
 
 @app.get("/", response_class=HTMLResponse)
 async def index(request: Request):
@@ -136,15 +166,18 @@ async def handle_question(
     request: Request,
     question: str = Form(...),
     provider: str = Form(DEFAULT_PROVIDER),
-    model: str = Form(DEFAULT_MODEL)
+    model: str = Form(DICT_DEFAULT_MODEL[DEFAULT_PROVIDER])
 ):
     
     timestamp = datetime.now()
     
     llm_provider = providers.get(provider)
+
+    logging.info(f"llm_provider: {llm_provider}")
     
     if llm_provider:
         answer = llm_provider.get_response(question, model=model)
+        logging.info(f"answer : {answer}")
         # Use the dedicated model for theme classification
         theme = llm_provider.classify_theme(question, SUBJECT_CATEGORIES, model=THEME_ANALYSIS_MODEL)
         sub_theme = llm_provider.classify_subtheme(question, theme, DICT_CATEGORIES[theme], model=THEME_ANALYSIS_MODEL)
@@ -152,7 +185,6 @@ async def handle_question(
         is_error_msg = llm_provider.is_error_message(question, model=THEME_ANALYSIS_MODEL)
         # Determine difficulty of the question (easy, medium, hard)
         difficulty = llm_provider.judge_difficulty_level(question, model=DIFFICULTY_ANALYSIS_MODEL)
-        
     else:
         answer = "Selected provider not available."
         theme = "other"
@@ -449,7 +481,7 @@ async def chat_message(
     conversation_id: str,
     message: str = Form(...),
     provider: str = Form(DEFAULT_PROVIDER),
-    model: str = Form(DEFAULT_MODEL)
+    model: str = Form(DICT_DEFAULT_MODEL[DEFAULT_PROVIDER])
 ):
     timestamp = datetime.now()
     llm_provider = providers.get(provider)
@@ -571,4 +603,4 @@ async def clear_conversations():
 
 if __name__ == "__main__":
     import uvicorn
-    uvicorn.run(app, host="0.0.0.0", port=8000)
+    uvicorn.run("main:app", host="0.0.0.0", port=8000, reload = True)

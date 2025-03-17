@@ -9,9 +9,17 @@ OPENAI_API_KEY = os.getenv("OPENAI_API_KEY", "")
 
 # Default LLM provider
 DEFAULT_PROVIDER = "openai"
-DEFAULT_MODEL = "gpt-4o-mini"
+DICT_DEFAULT_MODEL = {
+                        "openai": "gpt-4o-mini", 
+                        "ollama":"deepseek-r1:latest"
+                    }
 
-DICT_CATEGORIES = {"programming": ["python", "rust", "c++", "other", "frontend","algorithms","backend"],
+# Dedicated models for theme analysis and difficulty analysis
+THEME_ANALYSIS_MODEL = DICT_DEFAULT_MODEL["openai"]
+DIFFICULTY_ANALYSIS_MODEL = DICT_DEFAULT_MODEL["openai"]
+
+DICT_CATEGORIES = {
+                   "programming": ["python", "rust", "c++", "frontend", "algorithms", "backend"],
                    "database": ["sql", "nosql", "relational", "document", "graph"],
                    "machine learning": ["supervised", "unsupervised", "reinforcement", "deep learning", "nlp"],
                    "LLM": ["transformers", "fine-tuning", "prompting", "evaluation", "deployment"],
@@ -26,6 +34,9 @@ DICT_CATEGORIES = {"programming": ["python", "rust", "c++", "other", "frontend",
                    "culture": ["literature", "art", "music", "philosophy", "sociology"],
                    "history of science": ["scientific revolution", "industrial revolution", "information age", "famous scientists"],
                    "psychology": ["cognitive", "behavioral", "developmental", "clinical", "social"],
-                   "medicine": ["anatomy", "physiology", "pathology", "pharmacology", "surgery"]}
+                   "medicine": ["anatomy", "physiology", "pathology", "pharmacology", "surgery"],
+                   "other": ["not yet classified"]
+                   }
+                
 
 

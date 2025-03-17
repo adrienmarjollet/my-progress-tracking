@@ -58,9 +58,11 @@
 
     make the app way more minimalistique
 
+
+ADD AN OPTION TO HAVE AN AUTOMATIC CHOICE OF LLM BASED ON THE DIFFICULTY OF THE QUESTIONs, the simpler the question the simpler the
     
 
 
-
+ADD A LIVE TRADUCTOR THAT TRACK THE PROGRESS OF THE WORDS I KNOW AND WORDS I DUNNO ETC
 
 

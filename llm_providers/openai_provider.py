@@ -1,3 +1,5 @@
+import os
+import logging
 from openai import OpenAI
 from .base import LLMProvider
 
@@ -6,22 +8,47 @@ from .base import LLMProvider
 class OpenAIProvider(LLMProvider):
     
     def __init__(self, api_key: str):
+        
         self.client = OpenAI(api_key=api_key)
         self.models = {
             'chatgpt-4o-latest': 'chatgpt-4o-latest',
             'o1-mini': 'o1-mini',
             'gpt-4o-mini': 'gpt-4o-mini'
         }
-        self.default_model = 'gpt-4o-mini'
-    
 
+        self.default_model = 'gpt-4o-mini'
+        
+        # Set up logging
+        self.logger = logging.getLogger('openai_provider')
+        self.logger.setLevel(logging.INFO)
+        
+        # Ensure logs directory exists
+        logs_dir = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), 'logs')
+        os.makedirs(logs_dir, exist_ok=True)
+        
+        # Create file handler which logs to file (overwrite mode)
+        log_file = os.path.join(logs_dir, 'openai_provider.log')
+        file_handler = logging.FileHandler(log_file, mode='w')
+        file_handler.setLevel(logging.INFO)
+        
+        # Create formatter and add it to the handler
+        formatter = logging.Formatter('%(asctime)s - %(levelname)s - %(message)s')
+        file_handler.setFormatter(formatter)
+        
+        # Add the handler to the logger
+        self.logger.addHandler(file_handler)
+        
+        self.logger.info("OpenAIProvider initialized")
+    
     def get_available_models(self):
+        self.logger.info("Getting available models")
         return self.models
     
-
     def get_response(self, question: str, model=None) -> str:
         if not model:
             model = self.default_model
+        
+        self.logger.info(f"Getting response using model: {model}")
         
         try:
             response = self.client.chat.completions.create(
@@ -30,12 +57,16 @@ class OpenAIProvider(LLMProvider):
                     {"role": "user", "content": question}
                 ]
             )
+            self.logger.info("Response received successfully")
             return response.choices[0].message.content
         except Exception as e:
+            self.logger.error(f"Error getting response: {str(e)}")
             return f"Error from OpenAI API: {str(e)}"
         
     def get_chat_response(self, message, history=None, model="gpt-4o-mini"):
         """Get a response in a multi-turn conversation."""
+        self.logger.info(f"Getting chat response using model: {model}")
+        
         try:
             # Start with system message
             messages = [{"role": "system", "content": "You are a helpful AI assistant."}]
@@ -53,14 +84,17 @@ class OpenAIProvider(LLMProvider):
                 messages=messages
             )
             
+            self.logger.info("Chat response received successfully")
             return response.choices[0].message.content
         except Exception as e:
+            self.logger.error(f"Error getting chat response: {str(e)}")
             return f"Error: {str(e)}"    
     
-
     def classify_theme(self, question: str, categories: list, model=None) -> str:
         if not model:
             model = self.default_model
+            
+        self.logger.info(f"Classifying theme using model: {model}")
             
         prompt = f"""Classify the following question into exactly one of these categories: {', '.join(categories)}.
         Only respond with the category name, nothing else.
@@ -85,6 +119,7 @@ class OpenAIProvider(LLMProvider):
             return theme
             
         except Exception as e:
+            self.logger.error(f"Error classifying theme: {str(e)}")
             return "other"
 
             
@@ -94,6 +129,8 @@ class OpenAIProvider(LLMProvider):
 
         if not theme_subcategories:
             return "other"
+        
+        self.logger.info(f"Classifying subtheme using model: {model}")
             
         prompt = f"""For a question that belongs to the '{main_theme}' category, classify it into exactly one of these subcategories: {', '.join(theme_subcategories)}.
         Only respond with the subcategory name, nothing else.
@@ -117,7 +154,8 @@ class OpenAIProvider(LLMProvider):
                 subtheme = "other"
             return subtheme
             
-        except Exception as _:
+        except Exception as e:
+            self.logger.error(f"Error classifying subtheme: {str(e)}")
             return "other"
 
     def judge_difficulty_level(self, question: str, model=None) -> str:
@@ -133,6 +171,8 @@ class OpenAIProvider(LLMProvider):
         """
         if not model:
             model = self.default_model
+        
+        self.logger.info(f"Judging difficulty level using model: {model}")
             
         prompt = f"""Analyze the following question or error message and determine if it's a beginner, intermediate, or advanced level programming question.
         Consider the following factors:
@@ -162,6 +202,7 @@ class OpenAIProvider(LLMProvider):
             return difficulty
             
         except Exception as e:
+            self.logger.error(f"Error judging difficulty level: {str(e)}")
             return "intermediate"  # Default to intermediate on error
 
     def is_error_message(self, prompt: str, model=None) -> bool:
@@ -177,6 +218,8 @@ class OpenAIProvider(LLMProvider):
         """
         if not model:
             model = self.default_model
+        
+        self.logger.info(f"Determining if text is error message using model: {model}")
             
         analysis_prompt = f"""Analyze the following text and determine if it contains an error message or is a regular question.
         Error messages typically include stack traces, error codes, exception details, or explicit error statements.
@@ -200,5 +243,6 @@ class OpenAIProvider(LLMProvider):
             return result == "error"
             
         except Exception as e:
+            self.logger.error(f"Error determining if text is error message: {str(e)}")
             # Default to assuming it's a question if we can't determine
             return False
