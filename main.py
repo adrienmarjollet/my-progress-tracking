@@ -234,7 +234,7 @@ async def handle_question(
         answer = llm_provider.get_response(question, model=model)
         logging.info(f"answer : {answer}")
         # Convert markdown answer to HTML
-        answer = convert_markdown_to_html(answer)
+        answer_html = convert_markdown_to_html(answer)
         # Use the dedicated model for theme classification
         theme = llm_provider.classify_theme(question, SUBJECT_CATEGORIES, model=THEME_ANALYSIS_MODEL)
         sub_theme = llm_provider.classify_subtheme(question, theme, DICT_CATEGORIES[theme], model=THEME_ANALYSIS_MODEL)
@@ -247,6 +247,9 @@ async def handle_question(
         
         # Retrieve similar questions from the database
         similar_questions = []
+        show_hint = False
+        hint = None
+        
         with sqlite3.connect(DB) as conn:
             # Get all previous questions with their embeddings
             cursor = conn.cursor()
@@ -271,6 +274,10 @@ async def handle_question(
             if vector_db:
                 from utils.embedding_models import retrieve_n_closest_vectors
                 similar_results = retrieve_n_closest_vectors(question, vector_db, top_n=2)
+                
+                # Check if there is a highly similar question (>90%)
+                has_high_similarity = False
+                highly_similar_question = None
                 
                 for result in similar_results:
                     q_id = result[0]["id"]
@@ -298,6 +305,23 @@ async def handle_question(
                         "similarity": similarity,
                         "days_elapsed": days_elapsed
                     })
+                    
+                    if similarity > 90 and not has_high_similarity:
+                        has_high_similarity = True
+                        highly_similar_question = q_text
+                
+                # If there's a highly similar question, generate a hint
+                if has_high_similarity and highly_similar_question:
+                    show_hint = True
+                    hint_prompt = f"""A user has asked this question: "{question}"
+                    
+                    I found a very similar question that was asked before: "{highly_similar_question}"
+                    
+                    Please provide a brief hint (2-3 sentences) to help the user think about their question differently or explore related concepts, without directly answering the question.
+                    Make the hint helpful but not a direct answer. Encourage critical thinking."""
+                    
+                    hint = llm_provider.get_response(hint_prompt, model=model)
+                    hint = convert_markdown_to_html(hint)
 
     # Store the question with its embedding
     with sqlite3.connect(DB) as conn:
@@ -320,11 +344,14 @@ async def handle_question(
         "index.html",
         {
             "request": request, 
-            "answer": answer, 
+            "answer": answer_html, 
+            "raw_answer": answer,  # Pass the raw answer for future use
             "providers": providers.keys(), 
             "models": available_models,
             "question_id": question_id,
-            "similar_questions": similar_questions  # Pass similar questions to the template
+            "similar_questions": similar_questions,
+            "show_hint": show_hint,
+            "hint": hint
         }
     )
 
