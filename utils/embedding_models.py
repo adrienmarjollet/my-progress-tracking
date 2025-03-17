@@ -18,6 +18,7 @@ def cosine_similarity(a, b):
 
 
 def retrieve_n_closest_vectors(query, VECTOR_DB, top_n=3):
+  # TODO: we get it as text in the first place, so translate it first.
   query_embedding = get_embedding(query)
   # temporary list to store (chunk, similarity) pairs
   similarities = []

@@ -8,6 +8,9 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <!-- Add Prism.js CSS for code highlighting -->
     <link href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.28.0/themes/prism-tomorrow.min.css" rel="stylesheet">
+    <!-- Add MathJax for LaTeX rendering -->
+    <script src="https://polyfill.io/v3/polyfill.min.js?features=es6"></script>
+    <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
     <style>
         :root {
             --bg-primary: #121212;
@@ -24,6 +27,7 @@
             --code-bg: #1a1a1a;
             --button-text: #ffffff;
             --nav-active-text: #ffffff;
+            --math-color: #e0e0e0;
         }
         
         body {
@@ -448,7 +452,42 @@
             margin: 10px 0;
             border: 1px solid var(--border-color);
         }
+
+        /* LaTeX equation styling */
+        .answer .MathJax {
+            color: var(--math-color) !important;
+        }
+        
+        /* Equation block styling */
+        .answer .math-block {
+            display: block;
+            overflow-x: auto;
+            margin: 1em 0;
+            padding: 0.5em;
+            text-align: center;
+        }
     </style>
+    <!-- Configure MathJax for dark theme compatibility -->
+    <script>
+        window.MathJax = {
+            tex: {
+                inlineMath: [['$', '$'], ['\\(', '\\)'],['[',']'],['(',')']],
+                displayMath: [['$$', '$$'], ['\\[', '\\]']],
+                processEscapes: true
+            },
+            options: {
+                skipHtmlTags: ['script', 'noscript', 'style', 'textarea', 'pre', 'code'],
+                ignoreHtmlClass: 'tex2jax_ignore'
+            },
+            svg: {
+                fontCache: 'global'
+            },
+            chtml: {
+                scale: 1,
+                fontURL: 'https://cdn.jsdelivr.net/npm/mathjax@3/es5/output/chtml/fonts/woff-v2'
+            }
+        };
+    </script>
     <script>
         // This function will update the available models based on the selected provider
         function updateModelOptions() {
@@ -581,6 +620,13 @@
                 // Process code blocks in the answer
                 if (document.querySelector('.answer-content')) {
                     processCodeBlocks();
+                }
+                
+                // Typeset any LaTeX that might be in the page
+                if (window.MathJax && window.MathJax.typesetPromise) {
+                    window.MathJax.typesetPromise().catch(function(err) {
+                        console.log('MathJax typesetting failed: ' + err.message);
+                    });
                 }
             });
             

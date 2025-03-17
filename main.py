@@ -176,6 +176,26 @@ async def index(request: Request):
 
 # Add a function to convert markdown to HTML
 def convert_markdown_to_html(md_text):
+    # Pre-process LaTeX equations to protect them from markdown processing
+    # Save inline math: $...$
+    import re
+    
+    # Function to escape special characters in LaTeX
+    def escape_latex(match):
+        content = match.group(1)
+        # Return the match with a special marker to find it later
+        return f"INLINE_MATH_START{content}INLINE_MATH_END"
+    
+    # Function to escape block math equations
+    def escape_block_latex(match):
+        content = match.group(1)
+        # Return the match with a special marker to find it later
+        return f"BLOCK_MATH_START{content}BLOCK_MATH_END"
+    
+    # Temporarily replace LaTeX equations with markers
+    md_text = re.sub(r'\$\$(.*?)\$\$', escape_block_latex, md_text, flags=re.DOTALL)
+    md_text = re.sub(r'\$(.*?)\$', escape_latex, md_text)
+    
     # Configure markdown extensions for better rendering
     extensions = [
         'fenced_code',        # For code blocks with ```
@@ -187,6 +207,13 @@ def convert_markdown_to_html(md_text):
     
     # Convert markdown to HTML
     html = markdown.markdown(md_text, extensions=extensions)
+    
+    # Restore inline LaTeX equations
+    html = re.sub(r'INLINE_MATH_START(.*?)INLINE_MATH_END', r'$\1$', html)
+    
+    # Restore block LaTeX equations with proper styling
+    html = re.sub(r'BLOCK_MATH_START(.*?)BLOCK_MATH_END', r'<div class="math-block">$$\1$$</div>', html)
+    
     return html
 
 @app.post("/")
