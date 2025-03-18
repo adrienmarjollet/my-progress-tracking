@@ -8,6 +8,15 @@
 *.log
 logs/
 
+
+# Additional todo files
+todo.txt
+TODO.txt
+TODO.md
+todos/
+.todo
+*.todo
+
 # Python
 __pycache__/
 *.py[cod]

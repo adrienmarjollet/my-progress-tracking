@@ -315,12 +315,10 @@ async def handle_question(
                     show_hint = True
                     hint_prompt = f"""A user has asked this question: "{question}"
                     
-                    I found a very similar question that was asked before: "{highly_similar_question}"
-                    
                     Please provide a brief hint (2-3 sentences) to help the user think about their question differently or explore related concepts, without directly answering the question.
                     Make the hint helpful but not a direct answer. Encourage critical thinking."""
                     
-                    hint = llm_provider.get_response(hint_prompt, model=model)
+                    hint = llm_provider.get_response(hint_prompt, model=DIFFICULTY_ANALYSIS_MODEL)
                     hint = convert_markdown_to_html(hint)
 
     # Store the question with its embedding
