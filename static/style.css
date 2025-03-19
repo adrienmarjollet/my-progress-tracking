@@ -109,10 +109,12 @@ button:hover {
 
 .answer-content {
     background-color: #000000;
-    padding: 15px;
+    padding: 12px;
     border-radius: 4px;
     border-left: 4px solid #7c4dff;
     white-space: pre-wrap;
+    font-size: 0.95rem;
+    line-height: 1.4;
 }
 
 table {
@@ -122,7 +124,7 @@ table {
 }
 
 table th, table td {
-    padding: 12px;
+    padding: 8px 12px;
     text-align: left;
     border-bottom: 1px solid #7c4dff;
 }
@@ -134,12 +136,12 @@ table th {
 
 .delete-button {
     display: inline-block;
-    padding: 5px 10px;
+    padding: 4px 8px;
     background-color: #7c4dff;
     color: white;
     border-radius: 3px;
     text-decoration: none;
-    font-size: 14px;
+    font-size: 13px;
 }
 
 .danger-button {
