@@ -31,6 +31,8 @@ from config import (
     DICT_CATEGORIES
 )
 
+DEFAULT_LLM_HINTER = DICT_DEFAULT_MODEL["openai"]
+
 from utils.embedding_models import get_embedding
 
 # Configure basic logging
@@ -311,15 +313,33 @@ async def handle_question(
                         highly_similar_question = q_text
                 
                 # If there's a highly similar question, generate a hint
+                detailed_hint = None  # Initialize the detailed hint variable
                 if has_high_similarity and highly_similar_question:
                     show_hint = True
+                    
+                    # Generate the initial brief hint
                     hint_prompt = f"""A user has asked this question: "{question}"
                     
                     Please provide a brief hint (2-3 sentences) to help the user think about their question differently or explore related concepts, without directly answering the question.
                     Make the hint helpful but not a direct answer. Encourage critical thinking."""
                     
-                    hint = llm_provider.get_response(hint_prompt, model=DIFFICULTY_ANALYSIS_MODEL)
+                    hint = llm_provider.get_response(hint_prompt, model=DEFAULT_LLM_HINTER)
                     hint = convert_markdown_to_html(hint)
+                    
+                    # Generate a more detailed and suggestive hint
+                    detailed_hint_prompt = f"""A user has asked this question: "{question}"
+                    
+                    The user initially saw a brief hint but needs more guidance. Please provide a more detailed hint that:
+                    1. Suggests specific approaches or techniques to solve the problem
+                    2. Mentions relevant concepts, libraries, or methods that might help
+                    3. Offers a structured way to think about the problem
+                    4. Includes 1-2 resources or documentation links if appropriate
+                    
+                    Don't directly solve the problem, but provide enough guidance that the user can make significant progress.
+                    Format your response with clear sections and use markdown for better readability."""
+                    
+                    detailed_hint = llm_provider.get_response(detailed_hint_prompt, model=DEFAULT_LLM_HINTER)
+                    detailed_hint = convert_markdown_to_html(detailed_hint)
 
     # Store the question with its embedding
     with sqlite3.connect(DB) as conn:
@@ -349,7 +369,8 @@ async def handle_question(
             "question_id": question_id,
             "similar_questions": similar_questions,
             "show_hint": show_hint,
-            "hint": hint
+            "hint": hint,
+            "detailed_hint": detailed_hint  # Add the detailed hint to the context
         }
     )
 
